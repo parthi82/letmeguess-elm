@@ -3,6 +3,7 @@ defmodule Letmeguess.UserSocket do
 
   ## Channels
   # channel "room:*", Letmeguess.RoomChannel
+  channel "room:public", Letmeguess.RoomChannel
 
   ## Transports
   transport :websocket, Phoenix.Transports.WebSocket
