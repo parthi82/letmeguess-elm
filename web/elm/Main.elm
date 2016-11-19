@@ -5,7 +5,6 @@ import Html.Events exposing (on, keyCode, onInput)
 import Html.Attributes exposing (value)
 import List
 import Json.Decode as Json
-import Html.App
 
 
 -- MODEL
@@ -89,9 +88,9 @@ onKeyDown tagger =
 -- MAIN
 
 
-main : Program Never
+main : Program Never Model Msg
 main =
-    Html.App.program
+    Html.program
         { init = init
         , view = view
         , update = update
