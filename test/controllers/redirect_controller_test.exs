@@ -3,6 +3,6 @@ defmodule Letmeguess.RedirectControllerTest do
 
   test "GET /", %{conn: conn} do
     conn = get conn, "/"
-    assert redirected_to(conn, 302) =~ ~r/^\/\w+$/
+    assert redirected_to(conn, 302) =~ ~r/^\/\w+[-]?$/
   end
 end
