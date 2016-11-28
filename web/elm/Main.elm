@@ -1,7 +1,7 @@
 module Main exposing (..)
 
-import Html exposing (Html, programWithFlags, div, ul, li, text, Attribute, input)
-import Html.Events exposing (on, keyCode, onInput)
+import Html exposing (Html, programWithFlags, div, ul, li, text, Attribute, input, button)
+import Html.Events exposing (on, keyCode, onInput, onClick)
 import Html.Attributes exposing (value)
 import List
 import Json.Decode as JD
@@ -16,9 +16,11 @@ import Phoenix exposing (connect, push)
 
 
 type alias Model =
-    { messages : List String
+    { messages : List ChatMsg
     , messageText : String
     , flags : Flags
+    , gameState : GameState
+    , userName : String
     }
 
 
@@ -29,37 +31,74 @@ type alias Flags =
     }
 
 
+type alias ChatMsg =
+    { user : String
+    , msg : String
+    }
+
+
+type GameState
+    = NotStarted
+    | Started
+    | Ended
+
+
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( Model [] "" flags, Cmd.none )
+    ( Model [] "" flags NotStarted "", Cmd.none )
 
 
 
--- ( { messages = [ "Hi" ], messageText = "" }, Cmd.none )
 -- MESSAGES
 
 
 type Msg
-    = KeyDown Int
-    | Input String
+    = NameInput String
+    | StartGame
+    | ChatInput String
     | NewMsg JE.Value
+    | SendMsg
 
 
 
 -- VIEW
 
 
-messageView : String -> Html Msg
-messageView message =
-    li [] [ text message ]
+messageView : ChatMsg -> Html Msg
+messageView payload =
+    li [] [ text (payload.user ++ ": " ++ payload.msg) ]
 
 
 view : Model -> Html Msg
-view { messages, messageText } =
-    div []
-        [ ul [] (List.map messageView messages)
-        , input [ onInput Input, onKeyDown KeyDown, value messageText ] []
-        ]
+view { messages, messageText, gameState } =
+    case gameState of
+        NotStarted ->
+            div []
+                [ (text " Enter your Nick name : ")
+                , input [ onInput NameInput, onEnter StartGame ] []
+                , button [ onClick StartGame ] [ text "Play" ]
+                ]
+
+        Started ->
+            div []
+                [ ul [] (List.map messageView messages)
+                , input [ onInput ChatInput, onEnter SendMsg, value messageText ] []
+                ]
+
+        Ended ->
+            div [] [ text "Game Ended!" ]
+
+
+onEnter : Msg -> Attribute Msg
+onEnter msg =
+    let
+        isEnter code =
+            if code == 13 then
+                JD.succeed msg
+            else
+                JD.fail "not ENTER"
+    in
+        on "keydown" (JD.andThen isEnter keyCode)
 
 
 
@@ -69,30 +108,41 @@ view { messages, messageText } =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        KeyDown key ->
-            if key == 13 then
-                let
-                    payload =
-                        JE.object [ ( "msg", JE.string model.messageText ) ]
+        NameInput txt ->
+            ( { model | userName = txt }, Cmd.none )
 
-                    message =
-                        Push.init model.flags.channel "new_msg"
-                            |> Push.withPayload payload
-                in
-                    ( { model | messageText = "" }, push model.flags.socketUrl message )
-            else
+        StartGame ->
+            if model.userName == "" then
                 ( model, Cmd.none )
+            else
+                ( { model | gameState = Started }, Cmd.none )
 
-        Input txt ->
+        SendMsg ->
+            let
+                payload =
+                    JE.object [ ( "msg", JE.string model.messageText ) ]
+
+                message =
+                    Push.init model.flags.channel "new_msg"
+                        |> Push.withPayload payload
+            in
+                ( { model | messageText = "" }, push model.flags.socketUrl message )
+
+        ChatInput txt ->
             ( { model | messageText = txt }, Cmd.none )
 
         NewMsg raw ->
-            case JD.decodeValue (JD.field "msg" JD.string) raw of
+            case JD.decodeValue decodeChatMsg raw of
                 Ok msg ->
                     ( { model | messages = model.messages ++ [ msg ] }, Cmd.none )
 
                 Err err ->
-                    ( { model | messages = model.messages ++ [ "msg not sent" ] }, Cmd.none )
+                    ( model, Cmd.none )
+
+
+decodeChatMsg : JD.Decoder ChatMsg
+decodeChatMsg =
+    JD.map2 ChatMsg (JD.field "user" JD.string) (JD.field "msg" JD.string)
 
 
 
@@ -104,21 +154,25 @@ socket socketUrl =
     Socket.init socketUrl
 
 
-channel : String -> Channel.Channel Msg
-channel channelId =
+channel : String -> String -> Channel.Channel Msg
+channel channelId userName =
     Channel.init channelId
+        |> Channel.withPayload (JE.object [ ( "user_name", JE.string userName ) ])
         |> Channel.on "new_msg" NewMsg
         |> Channel.withDebug
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
-    connect (socket model.flags.socketUrl) [ (channel model.flags.channel) ]
+subscriptions { flags, gameState, userName } =
+    case gameState of
+        Started ->
+            connect (socket flags.socketUrl) [ (channel flags.channel userName) ]
 
+        NotStarted ->
+            connect (socket flags.socketUrl) []
 
-onKeyDown : (Int -> msg) -> Attribute msg
-onKeyDown tagger =
-    on "keydown" (JD.map tagger keyCode)
+        Ended ->
+            connect (socket flags.socketUrl) []
 
 
 
