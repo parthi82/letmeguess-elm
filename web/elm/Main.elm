@@ -1,6 +1,6 @@
 module Main exposing (..)
 
-import Html exposing (Html, div, ul, li, text, Attribute, input)
+import Html exposing (Html, programWithFlags, div, ul, li, text, Attribute, input)
 import Html.Events exposing (on, keyCode, onInput)
 import Html.Attributes exposing (value)
 import List
@@ -18,12 +18,20 @@ import Phoenix exposing (connect, push)
 type alias Model =
     { messages : List String
     , messageText : String
+    , flags : Flags
     }
 
 
-init : ( Model, Cmd Msg )
-init =
-    ( Model [] "", Cmd.none )
+type alias Flags =
+    { roomUrl : String
+    , socketUrl : String
+    , channel : String
+    }
+
+
+init : Flags -> ( Model, Cmd Msg )
+init flags =
+    ( Model [] "" flags, Cmd.none )
 
 
 
@@ -68,10 +76,10 @@ update msg model =
                         JE.object [ ( "msg", JE.string model.messageText ) ]
 
                     message =
-                        Push.init "room:lobby" "new_msg"
+                        Push.init model.flags.channel "new_msg"
                             |> Push.withPayload payload
                 in
-                    ( { model | messageText = "" }, push socketUrl message )
+                    ( { model | messageText = "" }, push model.flags.socketUrl message )
             else
                 ( model, Cmd.none )
 
@@ -91,24 +99,21 @@ update msg model =
 -- SUBCRIPTIONS
 
 
-socketUrl : String
-socketUrl =
-    "ws://localhost:4000/socket/websocket"
-
-
-socket =
+socket : String -> Socket.Socket Msg
+socket socketUrl =
     Socket.init socketUrl
 
 
-channel =
-    Channel.init "room:lobby"
+channel : String -> Channel.Channel Msg
+channel channelId =
+    Channel.init channelId
         |> Channel.on "new_msg" NewMsg
         |> Channel.withDebug
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    connect socket [ channel ]
+    connect (socket model.flags.socketUrl) [ (channel model.flags.channel) ]
 
 
 onKeyDown : (Int -> msg) -> Attribute msg
@@ -120,9 +125,9 @@ onKeyDown tagger =
 -- MAIN
 
 
-main : Program Never Model Msg
+main : Program Flags Model Msg
 main =
-    Html.program
+    programWithFlags
         { init = init
         , view = view
         , update = update

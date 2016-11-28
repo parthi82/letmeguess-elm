@@ -1,7 +1,7 @@
 defmodule Letmeguess.RoomChannel do
   use Phoenix.Channel
 
-  def join("room:lobby", _message, socket) do
+  def join("room:" <> _room_id, _message, socket) do
     {:ok, socket}
   end
 

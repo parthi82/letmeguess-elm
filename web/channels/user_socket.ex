@@ -2,8 +2,7 @@ defmodule Letmeguess.UserSocket do
   use Phoenix.Socket
 
   ## Channels
-  # channel "room:*", Letmeguess.RoomChannel
-  channel "room:lobby", Letmeguess.RoomChannel
+  channel "room:*", Letmeguess.RoomChannel
 
   ## Transports
   transport :websocket, Phoenix.Transports.WebSocket
