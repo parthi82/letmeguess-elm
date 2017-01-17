@@ -9,7 +9,7 @@ defmodule Letmeguess.Mixfile do
      compilers: [:phoenix, :gettext] ++ Mix.compilers,
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
-     deps: deps(),
+     deps: deps(Mix.env),
      test_coverage: [tool: ExCoveralls]]
   end
 
