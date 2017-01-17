@@ -7,4 +7,4 @@ branches:
   only:
   - master
 script:
-  - "MIX_ENV=test mix do deps.get, test && mix compile && mix coveralls.travis"
+  - MIX_ENV=test mix do deps.get, compile, coveralls.travis
