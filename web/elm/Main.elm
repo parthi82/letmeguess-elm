@@ -34,6 +34,7 @@ type alias Flags =
 type alias ChatMsg =
     { user : String
     , msg : String
+    , msgType : String
     }
 
 
@@ -66,7 +67,12 @@ type Msg
 
 messageView : ChatMsg -> Html Msg
 messageView payload =
-    li [] [ text (payload.user ++ ": " ++ payload.msg) ]
+    if payload.msgType == "user_msg" then
+        li [] [ text (payload.user ++ ": " ++ payload.msg) ]
+    else if payload.msgType == "joined" then
+        li [] [ text (payload.user ++ " has joined") ]
+    else
+        li [] [ text (payload.user ++ " has left") ]
 
 
 view : Model -> Html Msg
@@ -142,7 +148,7 @@ update msg model =
 
 decodeChatMsg : JD.Decoder ChatMsg
 decodeChatMsg =
-    JD.map2 ChatMsg (JD.field "user" JD.string) (JD.field "msg" JD.string)
+    JD.map3 ChatMsg (JD.field "user" JD.string) (JD.field "msg" JD.string) (JD.field "type" JD.string)
 
 
 
