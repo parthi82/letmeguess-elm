@@ -17,13 +17,18 @@ defmodule Letmeguess.RoomChannelTest  do
       {:ok, %{}, socket} = join socket, "room:test", %{"user_name" => "test_user"}
       @endpoint.subscribe("room:test")
       push socket, "new_msg", %{"msg": "test"}
-      assert_broadcast "new_msg", %{msg: "test", user: "test_user"}
+      assert_broadcast "new_msg", %{msg: "test", user: "test_user", type: "user_msg"}
   end
 
   test "broadcasts are pushed to the client", %{socket: socket} do
     {:ok, %{}, socket} = join socket, "room:test", %{"user_name" => "test_user"}
     broadcast_from! socket, "broadcast", %{"some" => "data"}
     assert_push "broadcast", %{"some" => "data"}
+  end
+
+  test "broadcast when someone joins the room", %{socket: socket} do
+     {:ok, _, _} = subscribe_and_join(socket, "room:test", %{"user_name" => "test_user"})
+     assert_broadcast "new_msg", %{msg: "", user: "test_user", type: "joined"}
   end
 
 end
