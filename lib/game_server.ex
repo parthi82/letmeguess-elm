@@ -28,8 +28,10 @@ defmodule GameServer do
   end
 
   def remove_player(data, player, room) do
-    {_, new_data} = Map.pop(data, player)
-    :ets.insert(:game_room, {room, new_data})
+    case Map.pop(data, player) do
+      {_, new_data}  -> :ets.insert(:game_room, {room, new_data})
+      {_, %{}} -> :ets.delete(:game_room, room)
+    end
   end
 
 
