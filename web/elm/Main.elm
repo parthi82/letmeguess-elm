@@ -11,7 +11,7 @@ import Phoenix.Channel as Channel
 import Phoenix.Push as Push
 import Phoenix exposing (connect, push)
 import Material
-import Material.Scheme
+import Material.Layout as Layout
 import Material.Button as Button
 import Material.Options exposing (css)
 
@@ -92,17 +92,20 @@ view { mdl, messages, messageText, gameState } =
                 ]
 
         Started ->
-            -- div []
-            --     [ ul [] (List.map messageView messages)
-            --     , input [ onInput ChatInput, onEnter SendMsg, value messageText ] []
-            --     ]
             div []
-                [ Button.render Mdl
-                    [ 0 ]
+                [ Layout.render Mdl
                     mdl
-                    [ css "margin" "0 24px"
-                    ]
-                    [ text "Increase" ]
+                    [ Layout.fixedHeader ]
+                    { header = [ Layout.title [] [ text "Letmeguess!" ] ]
+                    , drawer = []
+                    , tabs = ( [], [] )
+                    , main =
+                        [ div []
+                            [ ul [] (List.map messageView messages)
+                            , input [ onInput ChatInput, onEnter SendMsg, value messageText ] []
+                            ]
+                        ]
+                    }
                 ]
 
         Ended ->
@@ -187,16 +190,25 @@ channel channelId userName =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions { flags, gameState, userName } =
+subscriptions { mdl, flags, gameState, userName } =
     case gameState of
         Started ->
-            connect (socket flags.socketUrl) [ (channel flags.channel userName) ]
+            Sub.batch
+                [ Layout.subs Mdl mdl
+                , connect (socket flags.socketUrl) [ (channel flags.channel userName) ]
+                ]
 
         NotStarted ->
-            connect (socket flags.socketUrl) []
+            Sub.batch
+                [ Layout.subs Mdl mdl
+                , connect (socket flags.socketUrl) []
+                ]
 
         Ended ->
-            connect (socket flags.socketUrl) []
+            Sub.batch
+                [ Layout.subs Mdl mdl
+                , connect (socket flags.socketUrl) []
+                ]
 
 
 
