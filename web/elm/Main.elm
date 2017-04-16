@@ -10,13 +10,18 @@ import Phoenix.Socket as Socket
 import Phoenix.Channel as Channel
 import Phoenix.Push as Push
 import Phoenix exposing (connect, push)
+import Material
+import Material.Scheme
+import Material.Button as Button
+import Material.Options exposing (css)
 
 
 -- MODEL
 
 
 type alias Model =
-    { messages : List ChatMsg
+    { mdl : Material.Model
+    , messages : List ChatMsg
     , messageText : String
     , flags : Flags
     , gameState : GameState
@@ -46,7 +51,7 @@ type GameState
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( Model [] "" flags NotStarted "", Cmd.none )
+    ( Model Material.model [] "" flags NotStarted "", Cmd.none )
 
 
 
@@ -54,7 +59,8 @@ init flags =
 
 
 type Msg
-    = NameInput String
+    = Mdl (Material.Msg Msg)
+    | NameInput String
     | StartGame
     | ChatInput String
     | NewMsg JE.Value
@@ -76,7 +82,7 @@ messageView payload =
 
 
 view : Model -> Html Msg
-view { messages, messageText, gameState } =
+view { mdl, messages, messageText, gameState } =
     case gameState of
         NotStarted ->
             div []
@@ -86,9 +92,17 @@ view { messages, messageText, gameState } =
                 ]
 
         Started ->
+            -- div []
+            --     [ ul [] (List.map messageView messages)
+            --     , input [ onInput ChatInput, onEnter SendMsg, value messageText ] []
+            --     ]
             div []
-                [ ul [] (List.map messageView messages)
-                , input [ onInput ChatInput, onEnter SendMsg, value messageText ] []
+                [ Button.render Mdl
+                    [ 0 ]
+                    mdl
+                    [ css "margin" "0 24px"
+                    ]
+                    [ text "Increase" ]
                 ]
 
         Ended ->
@@ -144,6 +158,10 @@ update msg model =
 
                 Err err ->
                     ( model, Cmd.none )
+
+        -- Boilerplate: Mdl action handler.
+        Mdl msg_ ->
+            Material.update Mdl msg_ model
 
 
 decodeChatMsg : JD.Decoder ChatMsg

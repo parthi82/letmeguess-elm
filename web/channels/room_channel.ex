@@ -8,7 +8,7 @@ defmodule Letmeguess.RoomChannel do
       socket = socket |> assign(:room_id, room_id)
       {:ok, socket |> assign(:user_name, user_name)}
     else
-      {:error, %{reason: "unauthorized"}}
+      {:error, %{reason: "user_name_exists"}}
     end
   end
 
