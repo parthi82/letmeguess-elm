@@ -1,6 +1,6 @@
 module Main exposing (..)
 
-import Html exposing (Html, programWithFlags, div, ul, li, text, Attribute, input, button)
+import Html exposing (Html, programWithFlags, div, ul, li, text, Attribute, input, button, h4)
 import Html.Events exposing (on, keyCode, onInput, onClick)
 import Html.Attributes exposing (value)
 import List
@@ -11,9 +11,20 @@ import Phoenix.Channel as Channel
 import Phoenix.Push as Push
 import Phoenix exposing (connect, push)
 import Material
+import Material.Elevation as Elevation
+import Material.Color as Color
 import Material.Layout as Layout
+import Material.Textfield as Textfield
 import Material.Button as Button
-import Material.Options exposing (css)
+import Material.Options as Options exposing (css)
+import Material.Grid exposing (grid, cell, size, Device(..))
+import Material.Card as Card
+
+
+white : Options.Property c m
+white =
+    Color.text Color.white
+
 
 
 -- MODEL
@@ -96,14 +107,32 @@ view { mdl, messages, messageText, gameState } =
                 [ Layout.render Mdl
                     mdl
                     [ Layout.fixedHeader ]
-                    { header = [ Layout.title [] [ text "Letmeguess!" ] ]
+                    { header = [ Layout.title [] [ text "Letmeguess" ] ]
                     , drawer = []
                     , tabs = ( [], [] )
                     , main =
-                        [ div []
-                            [ ul [] (List.map messageView messages)
-                            , input [ onInput ChatInput, onEnter SendMsg, value messageText ] []
+                        [ grid []
+                            [ cell [ size All 4 ]
+                                [ h4 [] [ text "Cell 1" ]
+                                , Card.view
+                                    [ --  css "width"
+                                      --     "128px"
+                                      -- , Color.background
+                                      --     (Color.color Color.Blue Color.S500)
+                                      -- , Color.background (Color.color Color.Pink Color.S500)
+                                      -- Click
+                                      -- , Options.onClick Click
+                                      -- Elevation
+                                      Elevation.e2
+                                    ]
+                                    [ Card.actions []
+                                        [ Textfield.render Mdl [ 1 ] mdl [ Textfield.label "Type here" ] []
+                                        ]
+                                    ]
+                                ]
                             ]
+                        , grid [] []
+                        , grid [] []
                         ]
                     }
                 ]
