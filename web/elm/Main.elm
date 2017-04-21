@@ -1,6 +1,6 @@
 module Main exposing (..)
 
-import Html exposing (Html, programWithFlags, div, ul, li, text, Attribute, input, button, h4)
+import Html exposing (Html, programWithFlags, div, ul, li, text, Attribute, input, button, h4, p)
 import Html.Events exposing (on, keyCode, onInput, onClick)
 import Html.Attributes exposing (value)
 import List
@@ -15,9 +15,10 @@ import Material.Elevation as Elevation
 import Material.Color as Color
 import Material.Layout as Layout
 import Material.Textfield as Textfield
+import Material.List as Lists
 import Material.Button as Button
 import Material.Options as Options exposing (css)
-import Material.Grid exposing (grid, cell, size, Device(..))
+import Material.Grid exposing (grid, cell, size, offset, Device(..))
 import Material.Card as Card
 
 
@@ -92,6 +93,61 @@ messageView payload =
         li [] [ text (payload.user ++ " has left") ]
 
 
+chatView : Material.Model -> Html Msg
+chatView mdl =
+    div []
+        [ Card.view
+            [ Elevation.e2 ]
+            [ Card.actions []
+                [ Lists.ul []
+                    [ Lists.li [] [ Lists.content [] [ text "Elm" ] ]
+                    , Lists.li [] [ Lists.content [] [ text "F#" ] ]
+                    , Lists.li [] [ Lists.content [] [ text "Lisp" ] ]
+                    ]
+                ]
+            ]
+        , Card.view
+            [ --  css "width"
+              --     "128px"
+              -- , Color.background
+              --     (Color.color Color.Blue Color.S500)
+              -- , Color.background (Color.color Color.Pink Color.S500)
+              -- Click
+              -- , Options.onClick Click
+              -- Elevation
+              Elevation.e2
+            ]
+            [ Card.actions []
+                [ Textfield.render Mdl [ 1 ] mdl [ Textfield.label "Type here" ] []
+                ]
+            ]
+        ]
+
+
+drawingView : Html a
+drawingView =
+    grid [] []
+
+
+scoreView : Html a
+scoreView =
+    grid [] []
+
+
+gameView mdl =
+    grid [ css "display" "flex" ]
+        [ cell [ css "flex" "1", css "max-width" "128px" ]
+            [ h4 [] [ text "Cell 1" ]
+            , p [] [ text "This cell is offset by 2" ]
+            ]
+        , cell [ css "flex" "1", size All 6 ]
+            [ h4 [] [ text "Cell 2" ]
+            ]
+        , cell [ css "flex" "1", css "max-width" "260px", css "height" "100vh" ]
+            [ chatView mdl ]
+        ]
+
+
 view : Model -> Html Msg
 view { mdl, messages, messageText, gameState } =
     case gameState of
@@ -111,29 +167,7 @@ view { mdl, messages, messageText, gameState } =
                     , drawer = []
                     , tabs = ( [], [] )
                     , main =
-                        [ grid []
-                            [ cell [ size All 4 ]
-                                [ h4 [] [ text "Cell 1" ]
-                                , Card.view
-                                    [ --  css "width"
-                                      --     "128px"
-                                      -- , Color.background
-                                      --     (Color.color Color.Blue Color.S500)
-                                      -- , Color.background (Color.color Color.Pink Color.S500)
-                                      -- Click
-                                      -- , Options.onClick Click
-                                      -- Elevation
-                                      Elevation.e2
-                                    ]
-                                    [ Card.actions []
-                                        [ Textfield.render Mdl [ 1 ] mdl [ Textfield.label "Type here" ] []
-                                        ]
-                                    ]
-                                ]
-                            ]
-                        , grid [] []
-                        , grid [] []
-                        ]
+                        [ gameView mdl ]
                     }
                 ]
 
