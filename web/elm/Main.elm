@@ -107,8 +107,8 @@ drawingView =
         [ h4 [] [ text "Cell 2" ] ]
 
 
-chatView : Material.Model -> List ChatMsg -> Html Msg
-chatView mdl messages =
+chatView : Material.Model -> List ChatMsg -> String -> Html Msg
+chatView mdl messages messageText =
     div []
         [ Card.view
             [ Elevation.e2
@@ -126,22 +126,29 @@ chatView mdl messages =
               -- , Color.background (Color.color Color.Pink Color.S500)
               -- Click
               -- , Options.onClick Click
-              -- Elevation
               Elevation.e2
             , css "min-height" "10%"
             ]
             [ Card.actions []
-                [ Textfield.render Mdl [ 1 ] mdl [ Textfield.label "Type here", Options.onInput ChatInput ] []
+                [ Textfield.render Mdl
+                    [ 1 ]
+                    mdl
+                    [ Textfield.label "Type here"
+                    , Options.onInput ChatInput
+                    , Options.on "keydown" (JD.andThen isEnter keyCode)
+                    , Textfield.value messageText
+                    ]
+                    []
                 ]
             ]
         ]
 
 
-gameView mdl messages =
+gameView mdl messages messageText =
     div [ id "game_view" ]
         [ scoreView
         , drawingView
-        , chatView mdl messages
+        , chatView mdl messages messageText
         ]
 
 
@@ -164,12 +171,20 @@ view { mdl, messages, messageText, gameState } =
                     , drawer = []
                     , tabs = ( [], [] )
                     , main =
-                        [ gameView mdl messages ]
+                        [ gameView mdl messages messageText ]
                     }
                 ]
 
         Ended ->
             div [] [ text "Game Ended!" ]
+
+
+isEnter : number -> JD.Decoder Msg
+isEnter code =
+    if code == 13 then
+        JD.succeed SendMsg
+    else
+        JD.fail "not Enter"
 
 
 onEnter : Msg -> Attribute Msg
