@@ -2,7 +2,7 @@ module Main exposing (..)
 
 import Html exposing (Html, programWithFlags, div, ul, li, text, Attribute, input, button, h4, p)
 import Html.Events exposing (on, keyCode, onInput, onClick)
-import Html.Attributes exposing (value)
+import Html.Attributes exposing (class, id)
 import List
 import Json.Decode as JD
 import Json.Encode as JE
@@ -93,11 +93,27 @@ messageView payload =
         li [] [ text (payload.user ++ " has left") ]
 
 
+scoreView : Html a
+scoreView =
+    div [ id "score_view" ]
+        [ h4 [] [ text "Cell 1" ]
+        , p [] [ text "This cell is offset by 2" ]
+        ]
+
+
+drawingView : Html a
+drawingView =
+    div [ id "drawing_view" ]
+        [ h4 [] [ text "Cell 2" ] ]
+
+
 chatView : Material.Model -> Html Msg
 chatView mdl =
     div []
         [ Card.view
-            [ Elevation.e2 ]
+            [ Elevation.e2
+            , css "min-height" "70%"
+            ]
             [ Card.actions []
                 [ Lists.ul []
                     [ Lists.li [] [ Lists.content [] [ text "Elm" ] ]
@@ -116,35 +132,20 @@ chatView mdl =
               -- , Options.onClick Click
               -- Elevation
               Elevation.e2
+            , css "min-height" "10%"
             ]
             [ Card.actions []
-                [ Textfield.render Mdl [ 1 ] mdl [ Textfield.label "Type here" ] []
+                [ Textfield.render Mdl [ 1 ] mdl [ Textfield.label "Type here", Options.onInput ChatInput ] []
                 ]
             ]
         ]
 
 
-drawingView : Html a
-drawingView =
-    grid [] []
-
-
-scoreView : Html a
-scoreView =
-    grid [] []
-
-
 gameView mdl =
-    grid [ css "display" "flex" ]
-        [ cell [ css "flex" "1", css "max-width" "128px" ]
-            [ h4 [] [ text "Cell 1" ]
-            , p [] [ text "This cell is offset by 2" ]
-            ]
-        , cell [ css "flex" "1", size All 6 ]
-            [ h4 [] [ text "Cell 2" ]
-            ]
-        , cell [ css "flex" "1", css "max-width" "260px", css "height" "100vh" ]
-            [ chatView mdl ]
+    div [ id "game_view" ]
+        [ scoreView
+        , drawingView
+        , chatView mdl
         ]
 
 
@@ -162,7 +163,7 @@ view { mdl, messages, messageText, gameState } =
             div []
                 [ Layout.render Mdl
                     mdl
-                    [ Layout.fixedHeader ]
+                    [ Layout.fixedHeader, css "min-height" "100%" ]
                     { header = [ Layout.title [] [ text "Letmeguess" ] ]
                     , drawer = []
                     , tabs = ( [], [] )
