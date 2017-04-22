@@ -81,16 +81,16 @@ type Msg
 
 
 -- VIEW
+-- messageView : ChatMsg -> Html Msg
 
 
-messageView : ChatMsg -> Html Msg
 messageView payload =
     if payload.msgType == "user_msg" then
-        li [] [ text (payload.user ++ ": " ++ payload.msg) ]
+        Lists.li [] [ Lists.content [] [ text (payload.user ++ ": " ++ payload.msg) ] ]
     else if payload.msgType == "joined" then
-        li [] [ text (payload.user ++ " has joined") ]
+        Lists.li [] [ Lists.content [] [ text (payload.user ++ " has joined") ] ]
     else
-        li [] [ text (payload.user ++ " has left") ]
+        Lists.li [] [ Lists.content [] [ text (payload.user ++ " has left") ] ]
 
 
 scoreView : Html a
@@ -107,19 +107,15 @@ drawingView =
         [ h4 [] [ text "Cell 2" ] ]
 
 
-chatView : Material.Model -> Html Msg
-chatView mdl =
+chatView : Material.Model -> List ChatMsg -> Html Msg
+chatView mdl messages =
     div []
         [ Card.view
             [ Elevation.e2
             , css "min-height" "70%"
             ]
             [ Card.actions []
-                [ Lists.ul []
-                    [ Lists.li [] [ Lists.content [] [ text "Elm" ] ]
-                    , Lists.li [] [ Lists.content [] [ text "F#" ] ]
-                    , Lists.li [] [ Lists.content [] [ text "Lisp" ] ]
-                    ]
+                [ Lists.ul [] (List.map messageView messages)
                 ]
             ]
         , Card.view
@@ -141,11 +137,11 @@ chatView mdl =
         ]
 
 
-gameView mdl =
+gameView mdl messages =
     div [ id "game_view" ]
         [ scoreView
         , drawingView
-        , chatView mdl
+        , chatView mdl messages
         ]
 
 
@@ -168,7 +164,7 @@ view { mdl, messages, messageText, gameState } =
                     , drawer = []
                     , tabs = ( [], [] )
                     , main =
-                        [ gameView mdl ]
+                        [ gameView mdl messages ]
                     }
                 ]
 
