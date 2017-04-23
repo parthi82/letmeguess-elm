@@ -2,7 +2,7 @@ module Main exposing (..)
 
 import Html exposing (Html, programWithFlags, div, ul, li, text, Attribute, input, button, h4, p)
 import Html.Events exposing (on, keyCode, onInput, onClick)
-import Html.Attributes exposing (class, id)
+import Html.Attributes exposing (class, id, style)
 import List
 import Json.Decode as JD
 import Json.Encode as JE
@@ -18,8 +18,10 @@ import Material.Textfield as Textfield
 import Material.List as Lists
 import Material.Button as Button
 import Material.Options as Options exposing (css)
-import Material.Grid exposing (grid, cell, size, offset, Device(..))
 import Material.Card as Card
+import Collage exposing (defaultLine)
+import Element exposing (toHtml)
+import Mouse exposing (Position)
 
 
 white : Options.Property c m
@@ -38,6 +40,8 @@ type alias Model =
     , flags : Flags
     , gameState : GameState
     , userName : String
+    , isDraging : Bool
+    , paths : List (List Position)
     }
 
 
@@ -63,7 +67,7 @@ type GameState
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( Model Material.model [] "" flags NotStarted "", Cmd.none )
+    ( Model Material.model [] "" flags NotStarted "" False [], Cmd.none )
 
 
 
@@ -77,6 +81,9 @@ type Msg
     | ChatInput String
     | NewMsg JE.Value
     | SendMsg
+    | MouseDown Position
+    | MouseUp Position
+    | MouseMoved Position
 
 
 
@@ -96,26 +103,55 @@ messageView payload =
 scoreView : Html a
 scoreView =
     div [ id "score_view" ]
-        [ h4 [] [ text "Cell 1" ]
-        , p [] [ text "This cell is offset by 2" ]
+        [ h4 [] [ text "score_view" ]
+        , p [] [ text "This is score_view" ]
         ]
 
 
-drawingView : Html a
-drawingView =
-    div [ id "drawing_view" ]
-        [ h4 [] [ text "Cell 2" ] ]
+drawingView : Model -> Html Msg
+drawingView model =
+    let
+        toPaths positions =
+            Collage.path
+                (List.map
+                    (\{ x, y } ->
+                        ( toFloat <| x
+                        , toFloat <| -y
+                        )
+                    )
+                    positions
+                )
+                |> Collage.traced
+                    { defaultLine
+                        | width = 5
+                        , cap = Collage.Round
+                        , join = Collage.Smooth
+                    }
+                |> Collage.move ( -594, 315 )
+    in
+        div
+            [ id "drawing_view"
+            , style
+                [ ( "cursor", "pointer" )
+                , ( "border", "2px solid black" )
+                ]
+            ]
+            [ Collage.collage
+                700
+                500
+                (List.map toPaths model.paths)
+                |> toHtml
+            ]
 
 
-chatView : Material.Model -> List ChatMsg -> String -> Html Msg
-chatView mdl messages messageText =
+chatView model =
     div []
         [ Card.view
             [ Elevation.e2
             , css "min-height" "70%"
             ]
             [ Card.actions []
-                [ Lists.ul [] (List.map messageView messages)
+                [ Lists.ul [] (List.map messageView model.messages)
                 ]
             ]
         , Card.view
@@ -132,11 +168,11 @@ chatView mdl messages messageText =
             [ Card.actions []
                 [ Textfield.render Mdl
                     [ 1 ]
-                    mdl
+                    model.mdl
                     [ Textfield.label "Type here"
                     , Options.onInput ChatInput
                     , Options.on "keydown" (JD.andThen isEnter keyCode)
-                    , Textfield.value messageText
+                    , Textfield.value model.messageText
                     ]
                     []
                 ]
@@ -144,17 +180,17 @@ chatView mdl messages messageText =
         ]
 
 
-gameView mdl messages messageText =
+gameView model =
     div [ id "game_view" ]
         [ scoreView
-        , drawingView
-        , chatView mdl messages messageText
+        , drawingView model
+        , chatView model
         ]
 
 
 view : Model -> Html Msg
-view { mdl, messages, messageText, gameState } =
-    case gameState of
+view model =
+    case model.gameState of
         NotStarted ->
             div []
                 [ (text " Enter your Nick name : ")
@@ -165,13 +201,13 @@ view { mdl, messages, messageText, gameState } =
         Started ->
             div []
                 [ Layout.render Mdl
-                    mdl
+                    model.mdl
                     [ Layout.fixedHeader, css "min-height" "100%" ]
                     { header = [ Layout.title [] [ text "Letmeguess" ] ]
                     , drawer = []
                     , tabs = ( [], [] )
                     , main =
-                        [ gameView mdl messages messageText ]
+                        [ gameView model ]
                     }
                 ]
 
@@ -237,6 +273,23 @@ update msg model =
                 Err err ->
                     ( model, Cmd.none )
 
+        MouseDown xy ->
+            ( { model | isDraging = True, paths = [ xy ] :: model.paths }, Cmd.none )
+
+        MouseUp xy ->
+            ( { model | isDraging = False }, Cmd.none )
+
+        MouseMoved xy ->
+            if model.isDraging == True then
+                case model.paths of
+                    h :: t ->
+                        ( { model | paths = (h ++ [ xy ]) :: t }, Cmd.none )
+
+                    _ ->
+                        ( model, Cmd.none )
+            else
+                ( model, Cmd.none )
+
         -- Boilerplate: Mdl action handler.
         Mdl msg_ ->
             Material.update Mdl msg_ model
@@ -271,6 +324,9 @@ subscriptions { mdl, flags, gameState, userName } =
             Sub.batch
                 [ Layout.subs Mdl mdl
                 , connect (socket flags.socketUrl) [ (channel flags.channel userName) ]
+                , Mouse.downs MouseDown
+                , Mouse.ups MouseUp
+                , Mouse.moves MouseMoved
                 ]
 
         NotStarted ->
