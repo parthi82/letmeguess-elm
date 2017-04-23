@@ -2,7 +2,7 @@ module Main exposing (..)
 
 import Html exposing (Html, programWithFlags, div, ul, li, text, Attribute, input, button, h4, p)
 import Html.Events exposing (on, keyCode, onInput, onClick)
-import Html.Attributes exposing (class, id, style)
+import Html.Attributes exposing (id, style)
 import List
 import Json.Decode as JD
 import Json.Encode as JE
@@ -16,12 +16,14 @@ import Material.Color as Color
 import Material.Layout as Layout
 import Material.Textfield as Textfield
 import Material.List as Lists
-import Material.Button as Button
 import Material.Options as Options exposing (css)
 import Material.Card as Card
 import Collage exposing (defaultLine)
 import Element exposing (toHtml)
 import Mouse exposing (Position)
+
+
+-- import Material.Button as Button
 
 
 white : Options.Property c m
