@@ -1,3 +1,4 @@
 info "Building Phoenix static assets"
+elm-install
 NODE_ENV=production webpack -p
 mix phoenix.digest
