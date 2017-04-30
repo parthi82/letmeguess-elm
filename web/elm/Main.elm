@@ -150,7 +150,8 @@ chatView model =
     div []
         [ Card.view
             [ Elevation.e2
-            , css "min-height" "70%"
+            , css "overflow-y" "scroll"
+            , css "height" "calc(100% - 75px)"
             ]
             [ Card.actions []
                 [ Lists.ul [] (List.map messageView model.messages)

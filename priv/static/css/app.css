@@ -1,6 +1,7 @@
 #game_view {
   display: flex;
-  height: 100vh;
+  min-width: calc(100% - 35px);
+  height: calc(100% - 1px);
 }
 
 #score_view {
@@ -13,4 +14,12 @@
 
 #chat_view {
 
+}
+
+#elm-mdl-layout-main {
+  overflow: hidden;
+}
+
+.mdl-layout__content {
+  height: 100%
 }
