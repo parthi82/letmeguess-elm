@@ -21,6 +21,8 @@ import Material.Card as Card
 import Collage exposing (defaultLine)
 import Element exposing (toHtml)
 import Mouse exposing (Position)
+import Dom.Scroll as Scroll
+import Task
 
 
 -- import Material.Button as Button
@@ -86,6 +88,7 @@ type Msg
     | MouseDown Position
     | MouseUp Position
     | MouseMoved Position
+    | NoOp
 
 
 
@@ -152,6 +155,7 @@ chatView model =
             [ Elevation.e2
             , css "overflow-y" "scroll"
             , css "height" "calc(100% - 75px)"
+            , Options.id "chat_view"
             ]
             [ Card.actions []
                 [ Lists.ul [] (List.map messageView model.messages)
@@ -165,7 +169,7 @@ chatView model =
               -- , Color.background (Color.color Color.Pink Color.S500)
               -- Click
               -- , Options.onClick Click
-              Elevation.e2
+              Elevation.e16
             , css "min-height" "10%"
             ]
             [ Card.actions []
@@ -271,7 +275,9 @@ update msg model =
         NewMsg raw ->
             case JD.decodeValue decodeChatMsg raw of
                 Ok msg ->
-                    ( { model | messages = model.messages ++ [ msg ] }, Cmd.none )
+                    ( { model | messages = model.messages ++ [ msg ] }
+                    , Task.attempt (always NoOp) <| Scroll.toBottom "chat_view"
+                    )
 
                 Err err ->
                     ( model, Cmd.none )
@@ -292,6 +298,9 @@ update msg model =
                         ( model, Cmd.none )
             else
                 ( model, Cmd.none )
+
+        NoOp ->
+            ( model, Cmd.none )
 
         -- Boilerplate: Mdl action handler.
         Mdl msg_ ->
