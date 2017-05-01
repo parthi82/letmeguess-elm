@@ -6,59 +6,35 @@ defmodule GameServer do
     GenServer.start_link(__MODULE__, :ok, name: name)
   end
 
-  def join(server, room , player) do
-    GenServer.call(server, {:join, room, player})
+  def start_game(server, room) do
+    GenServer.call(server, {:start_game, room})
   end
 
-  def leave(server, room, player) do
-    GenServer.cast(server, {:leave, room, player})
+  def end_game(server, room) do
+    GenServer.cast(server, {:end_game, room})
   end
 
   ## Server CallBacks
-  def handle_call({:join, room, player}, _from, state) do
-    {:reply, join_room(room, player), state}
-  end
-
-  def handle_cast({:leave, room, player}, state) do
-    case :ets.lookup(:game_room, room) do
-      [] -> true
-      [{^room, data}]-> remove_player(data, player, room)
-    end
-    {:noreply, state}
-  end
-
-  def remove_player(data, player, room) do
-    case Map.pop(data, player) do
-      {_, new_data}  -> :ets.insert(:game_room, {room, new_data})
-      {_, %{}} -> :ets.delete(:game_room, room)
+  def handle_call({:start_game, room}, _from, state) do
+    value = get_defaults()
+    case Map.get(state, room) do
+      nil -> {:reply, value, Map.put(state, room, value)}
+      _ -> {:reply, false, state}
     end
   end
 
-
-  defp join_room(room, player) do
-    case :ets.lookup(:game_room, room) do
-      [] -> :ets.insert(:game_room, {room, %{player => player_defaults()}})
-      [{^room, data}]-> player_exists?(data, player, room)
-    end
+  defp get_defaults(word \\ "apple") do
+    blanks = word
+            |> String.codepoints
+            |> (fn(list) -> (for _ <- list, do: "_") end).()
+    %{"word" => word, "blanks" => blanks}
   end
 
-  defp player_exists?(data, player, room) do
-    case Map.get(data, player) do
-      nil -> update_players(data, player, room)
-      _ -> false
-    end
+  def handle_cast({:end_game, room}, state) do
+    {:noreply, Map.delete(state, room)}
   end
-
-  defp update_players(data, player, room) do
-    data = Map.put(data, player, player_defaults())
-    :ets.insert(:game_room, {room, data})
-    true
-  end
-
-  defp player_defaults, do: %{"drew": false, "score": 0}
 
   def init(:ok) do
-    :ets.new(:game_room, [:named_table, :set, :private])
     {:ok, %{}}
   end
 

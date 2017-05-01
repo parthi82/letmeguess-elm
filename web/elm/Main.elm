@@ -96,6 +96,7 @@ type Msg
 -- messageView : ChatMsg -> Html Msg
 
 
+messageView : ChatMsg -> Html msg
 messageView payload =
     if payload.msgType == "user_msg" then
         Lists.li [] [ Lists.content [] [ text (payload.user ++ ": " ++ payload.msg) ] ]
@@ -149,27 +150,21 @@ drawingView model =
             ]
 
 
+chatView : Model -> Html Msg
 chatView model =
-    div []
+    div [ id "chat_view" ]
         [ Card.view
             [ Elevation.e2
             , css "overflow-y" "scroll"
             , css "height" "calc(100% - 75px)"
-            , Options.id "chat_view"
+            , Options.id "chat_content"
             ]
             [ Card.actions []
                 [ Lists.ul [] (List.map messageView model.messages)
                 ]
             ]
         , Card.view
-            [ --  css "width"
-              --     "128px"
-              -- , Color.background
-              --     (Color.color Color.Blue Color.S500)
-              -- , Color.background (Color.color Color.Pink Color.S500)
-              -- Click
-              -- , Options.onClick Click
-              Elevation.e16
+            [ Elevation.e16
             , css "min-height" "10%"
             ]
             [ Card.actions []
@@ -187,6 +182,7 @@ chatView model =
         ]
 
 
+gameView : Model -> Html Msg
 gameView model =
     div [ id "game_view" ]
         [ scoreView
@@ -276,7 +272,7 @@ update msg model =
             case JD.decodeValue decodeChatMsg raw of
                 Ok msg ->
                     ( { model | messages = model.messages ++ [ msg ] }
-                    , Task.attempt (always NoOp) <| Scroll.toBottom "chat_view"
+                    , Task.attempt (always NoOp) <| Scroll.toBottom "chat_content"
                     )
 
                 Err err ->

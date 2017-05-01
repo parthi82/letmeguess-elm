@@ -12,6 +12,7 @@ defmodule Letmeguess do
       supervisor(Letmeguess.Endpoint, []),
       # Start your own worker by calling: Letmeguess.Worker.start_link(arg1, arg2, arg3)
       # worker(Letmeguess.Worker, [arg1, arg2, arg3]),
+      worker(Players, [Players]),
       worker(GameServer, [GameServer]),
     ]
 
