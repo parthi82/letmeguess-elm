@@ -16,6 +16,12 @@
 
 }
 
+.chat_item {
+  font-size: medium;
+  width: calc(100%);
+  word-wrap: break-word;
+}
+
 #elm-mdl-layout-main {
   overflow: hidden;
 }

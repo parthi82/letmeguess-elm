@@ -2,7 +2,7 @@ module Main exposing (..)
 
 import Html exposing (Html, programWithFlags, div, ul, li, text, Attribute, input, button, h4, p)
 import Html.Events exposing (on, keyCode, onInput, onClick)
-import Html.Attributes exposing (id, style)
+import Html.Attributes exposing (class, id, style)
 import List
 import Json.Decode as JD
 import Json.Encode as JE
@@ -96,14 +96,19 @@ type Msg
 -- messageView : ChatMsg -> Html Msg
 
 
+messagText : String -> Html msg
+messagText txt =
+    Lists.li [] [ div [ class "chat_item" ] [ text (txt) ] ]
+
+
 messageView : ChatMsg -> Html msg
 messageView payload =
     if payload.msgType == "user_msg" then
-        Lists.li [] [ Lists.content [] [ text (payload.user ++ ": " ++ payload.msg) ] ]
+        messagText (payload.user ++ ": " ++ payload.msg)
     else if payload.msgType == "joined" then
-        Lists.li [] [ Lists.content [] [ text (payload.user ++ " has joined") ] ]
+        messagText (payload.user ++ " has joined")
     else
-        Lists.li [] [ Lists.content [] [ text (payload.user ++ " has left") ] ]
+        messagText (payload.user ++ " has left")
 
 
 scoreView : Html a
