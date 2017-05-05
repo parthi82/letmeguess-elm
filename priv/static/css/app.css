@@ -29,3 +29,9 @@
 .mdl-layout__content {
   height: 100%
 }
+
+header :nth-child(1) {
+  transform: translate(1%, 70%);
+  font-weight: bold;
+  font-size: x-large;
+}
