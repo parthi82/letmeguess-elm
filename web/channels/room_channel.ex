@@ -1,8 +1,11 @@
 defmodule Letmeguess.RoomChannel do
   use Phoenix.Channel
 
+  alias Letmeguess.Game.Server, as: GameServer
+
   def join("room:" <> room_id, %{"user_name" => user_name}, socket) do
-    result = Players.join(Players, room_id, user_name)
+    GameServer.create(room_id)
+    result = GameServer.join(room_id, user_name)
     if result do
       send(self(), %{"joined" => user_name})
       socket = socket |> assign(:room_id, room_id)
@@ -30,7 +33,7 @@ defmodule Letmeguess.RoomChannel do
   def terminate(_reason, socket) do
     user_name = socket.assigns[:user_name]
     room_id = socket.assigns[:room_id]
-    Players.leave(Players, room_id, user_name)
+    GameServer.leave(room_id, user_name)
     broadcast socket, "new_msg", %{msg: "", user: user_name, type: "left"}
     {:shutdown, :closed}
   end
