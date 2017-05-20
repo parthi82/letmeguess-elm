@@ -30,18 +30,26 @@ defmodule Letmeguess.Game.Server do
  ## Server Callbacks
 
   def init(:ok) do
-    {:ok, %{'started' => false}}
+    {:ok, %{"started" => false, "players" => %{}}}
   end
 
-  def handle_call({:join, player}, _from, state) do
-    case Map.get(state, player) do
-      nil -> {:reply, true, Map.put(state, player, player_defaults())}
-      _value ->   {:reply, false, state}
+  def join(value, player, state) do
+    case value do
+      nil -> {:reply, true, put_in(state, ["players", player], player_defaults())}
+      _value -> {:reply, false, state}
     end
   end
 
+  def handle_call({:join, player}, _from, state) do
+    state
+    |> get_in(["players", player])
+    |> join(player, state)
+  end
+
+
   def handle_cast({:leave, player}, state) do
-    {:noreply, Map.delete(state, player)}
+    {_, new_state} = pop_in(state, ["players", player])
+    {:noreply, new_state}
   end
 
 
