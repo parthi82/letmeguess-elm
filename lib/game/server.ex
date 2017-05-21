@@ -3,6 +3,8 @@ defmodule Letmeguess.Game.Server do
 
   require Logger
 
+  @player_init %{"drawn" => false, "score" => 0}
+
   ## Client Api
 
   def create(game_id) do
@@ -35,7 +37,7 @@ defmodule Letmeguess.Game.Server do
 
   def join(value, player, state) do
     case value do
-      nil -> {:reply, true, put_in(state, ["players", player], player_defaults())}
+      nil -> {:reply, true, put_in(state["players"][player], @player_init)}
       _value -> {:reply, false, state}
     end
   end
@@ -72,8 +74,6 @@ defmodule Letmeguess.Game.Server do
        GenServer.cast(server, message)
    end
   end
-
-  defp player_defaults, do: %{"drawn": false, "score": 0}
 
   defp ref(game_id) do
     {:global, {:game, game_id}}
