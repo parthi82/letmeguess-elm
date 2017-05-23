@@ -7,7 +7,7 @@ defmodule Letmeguess.RoomChannel do
     GameServer.create(room_id)
     result = GameServer.join(room_id, user_name)
     if result do
-      send(self(), %{"joined" => user_name})
+      send(self(), %{"joined" => user_name, "room" => room_id})
       socket = socket |> assign(:room_id, room_id)
       {:ok, socket |> assign(:user_name, user_name)}
     else
@@ -15,14 +15,23 @@ defmodule Letmeguess.RoomChannel do
     end
   end
 
-  def handle_info(%{"joined" => user_name}, socket) do
+  def handle_info(%{"joined" => user_name, "room" => room_id}, socket) do
       broadcast socket, "new_msg", %{msg: "", user: user_name, type: "joined"}
+      GameServer.start(room_id)
       {:noreply, socket}
   end
 
   def handle_in("new_msg", %{"msg" => body}, socket) do
     user_name = socket.assigns[:user_name]
-    broadcast socket, "new_msg", %{msg: body, user: user_name, type: "user_msg"}
+    room_id = socket.assigns[:room_id]
+    word = GameServer.get_word(room_id)
+    cond do
+      word != body -> broadcast(socket, "new_msg", %{msg: body,
+                       user: user_name, type: "user_msg"})
+      word == body -> broadcast(socket, "new_msg",
+                                %{msg: "#{user_name} found the word",
+                                  user: user_name, type: "user_msg"})
+    end
     {:noreply, socket}
   end
 
