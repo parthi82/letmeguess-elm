@@ -18,6 +18,12 @@ defmodule Letmeguess.Game.Server do
     end
   end
 
+  def stop_game(game_id) do
+    Logger.debug "Stopping game #{game_id} in supervisor"
+    pid = GenServer.whereis(ref(game_id))
+    Supervisor.terminate_child(Letmeguess.Game.Supervisor, pid)
+  end
+
   def join(game_id, player) do
     try_call(game_id, {:join, player})
   end
@@ -69,7 +75,28 @@ defmodule Letmeguess.Game.Server do
     {:noreply, new_state}
   end
 
+  def handle_info({:time_up, game_id}, state) do
+    IO.puts "time up!"
+    players = state
+              |> Map.get("players")
+              |> Enum.filter(&(!elem(&1, 1)["drawn"]))
+    if players == [] do
+      IO.puts "game ended"
+      stop_game(game_id)
+    else
+      {player, _} = Enum.random(players)
+      Endpoint.broadcast("room:#{game_id}", "new_msg",
+                %{msg: "#{player} is going to draw",
+                  user: player, type: "user_msg"})
+      state = state
+              |> put_in(["players", player, "drawn"], true)
+              |> Map.put("started", true)
+              |> Map.merge(%{"started" => true, "word" => "apple"})
+      set_timer({:time_up, game_id}, 10_000)
+      {:noreply, state}
+    end
 
+  end
 
  ## helper functions
 
@@ -87,13 +114,19 @@ defmodule Letmeguess.Game.Server do
       Endpoint.broadcast("room:#{game_id}", "new_msg",
                 %{msg: "#{player} is going to draw",
                   user: player, type: "user_msg"})
+      state = state
+              |> put_in(["players", player, "drawn"], true)
+              |> Map.put("started", true)
+              |> Map.merge(%{"started" => true, "word" => "apple"})
+      set_timer({:time_up, game_id}, 20_000)
       state
-      |> put_in(["players", player, "drawn"], true)
-      |> Map.put("started", true)
-      |> Map.merge(%{"started" => true, "word" => "apple"})
     else
       state
     end
+  end
+
+  defp set_timer(msg, time) do
+    Process.send_after(self(), msg, time)
   end
 
   defp try_call(game_id, message) do
