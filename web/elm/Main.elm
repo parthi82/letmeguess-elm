@@ -196,6 +196,17 @@ gameView model =
         ]
 
 
+wordView =
+    ul [ class "word" ]
+        [ li [ class "letter" ] [ text "*" ]
+        , li [ class "letter" ] [ text "*" ]
+        , li [ class "letter" ] [ text "*" ]
+        , li [ class "letter" ] [ text "*" ]
+        , li [ class "letter" ] [ text "*" ]
+        , li [ class "letter" ] [ text "*" ]
+        ]
+
+
 view : Model -> Html Msg
 view model =
     case model.gameState of
@@ -211,7 +222,11 @@ view model =
                 [ Layout.render Mdl
                     model.mdl
                     [ Layout.fixedHeader, css "min-height" "100%" ]
-                    { header = [ Layout.title [] [ text "Letmeguess" ] ]
+                    { header =
+                        [ Layout.title [ Options.id "app_name" ]
+                            [ text "Letmeguess" ]
+                        , wordView
+                        ]
                     , drawer = []
                     , tabs = ( [], [] )
                     , main =

@@ -76,12 +76,12 @@ defmodule Letmeguess.Game.Server do
   end
 
   def handle_info({:time_up, game_id}, state) do
-    IO.puts "time up!"
+    Logger.debug "time up!"
     players = state
               |> Map.get("players")
               |> Enum.filter(&(!elem(&1, 1)["drawn"]))
     if players == [] do
-      IO.puts "game ended"
+      Logger.debug "game ended"
       stop_game(game_id)
     else
       {player, _} = Enum.random(players)
@@ -109,7 +109,7 @@ defmodule Letmeguess.Game.Server do
 
   defp start_game(players, state, game_id) do
     if length(players) >= 2 and !state["started"] do
-      IO.puts "starting the game"
+      Logger.debug "starting the game"
       {player, _} = Enum.random(players)
       Endpoint.broadcast("room:#{game_id}", "new_msg",
                 %{msg: "#{player} is going to draw",
