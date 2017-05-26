@@ -46,6 +46,7 @@ type alias Model =
     , userName : String
     , isDraging : Bool
     , paths : List (List Position)
+    , word : List String
     }
 
 
@@ -71,7 +72,7 @@ type GameState
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( Model Material.model [] "" flags NotStarted "" False [], Cmd.none )
+    ( Model Material.model [] "" flags NotStarted "" False [] [], Cmd.none )
 
 
 
@@ -196,15 +197,17 @@ gameView model =
         ]
 
 
-wordView =
-    ul [ class "word" ]
-        [ li [ class "letter" ] [ text "*" ]
-        , li [ class "letter" ] [ text "*" ]
-        , li [ class "letter" ] [ text "*" ]
-        , li [ class "letter" ] [ text "*" ]
-        , li [ class "letter" ] [ text "*" ]
-        , li [ class "letter" ] [ text "*" ]
-        ]
+letterView : String -> Html Msg
+letterView letter =
+    if letter == "*" then
+        li [ class "letter" ] [ text letter ]
+    else
+        li [ class "letter correct" ] [ text letter ]
+
+
+wordView : List String -> Html Msg
+wordView letters =
+    ul [ class "word" ] (List.map letterView letters)
 
 
 view : Model -> Html Msg
@@ -225,7 +228,7 @@ view model =
                     { header =
                         [ Layout.title [ Options.id "app_name" ]
                             [ text "Letmeguess" ]
-                        , wordView
+                        , wordView model.word
                         ]
                     , drawer = []
                     , tabs = ( [], [] )
@@ -325,7 +328,10 @@ update msg model =
 
 decodeChatMsg : JD.Decoder ChatMsg
 decodeChatMsg =
-    JD.map3 ChatMsg (JD.field "user" JD.string) (JD.field "msg" JD.string) (JD.field "type" JD.string)
+    JD.map3 ChatMsg
+        (JD.field "user" JD.string)
+        (JD.field "msg" JD.string)
+        (JD.field "type" JD.string)
 
 
 
