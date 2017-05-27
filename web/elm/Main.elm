@@ -361,6 +361,7 @@ channel : String -> String -> Channel.Channel Msg
 channel channelId userName =
     Channel.init channelId
         |> Channel.withPayload (JE.object [ ( "user_name", JE.string userName ) ])
+        |> Channel.on "new_msg" NewMsg
         |> Channel.on "word_update" WordUpdate
         |> Channel.withDebug
 
