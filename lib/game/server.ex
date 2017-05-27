@@ -90,8 +90,9 @@ defmodule Letmeguess.Game.Server do
                   user: player, type: "user_msg"})
       state = state
               |> put_in(["players", player, "drawn"], true)
-              |> Map.put("started", true)
-              |> Map.merge(%{"started" => true, "word" => "apple"})
+              |> Map.put("word", "cat")
+      Endpoint.broadcast("room:#{game_id}", "word_update",
+                          %{ "word" =>["*", "*", "*"]})
       set_timer({:time_up, game_id}, 10_000)
       {:noreply, state}
     end
@@ -116,8 +117,9 @@ defmodule Letmeguess.Game.Server do
                   user: player, type: "user_msg"})
       state = state
               |> put_in(["players", player, "drawn"], true)
-              |> Map.put("started", true)
-              |> Map.merge(%{"started" => true, "word" => "apple"})
+              |> Map.merge(%{"started" => true, "word" => "cat"})
+      Endpoint.broadcast("room:#{game_id}", "word_update",
+                          %{ "word" =>["*", "*", "*"]})
       set_timer({:time_up, game_id}, 20_000)
       state
     else

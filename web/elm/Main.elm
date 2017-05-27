@@ -85,6 +85,7 @@ type Msg
     | StartGame
     | ChatInput String
     | NewMsg JE.Value
+    | WordUpdate JE.Value
     | SendMsg
     | MouseDown Position
     | MouseUp Position
@@ -301,6 +302,14 @@ update msg model =
                 Err err ->
                     ( model, Cmd.none )
 
+        WordUpdate raw ->
+            case JD.decodeValue decodeWord raw of
+                Ok word ->
+                    ( { model | word = word }, Cmd.none )
+
+                Err err ->
+                    ( model, Cmd.none )
+
         MouseDown xy ->
             ( { model | isDraging = True, paths = [ xy ] :: model.paths }, Cmd.none )
 
@@ -326,6 +335,11 @@ update msg model =
             Material.update Mdl msg_ model
 
 
+decodeWord : JD.Decoder (List String)
+decodeWord =
+    JD.field "word" (JD.list JD.string)
+
+
 decodeChatMsg : JD.Decoder ChatMsg
 decodeChatMsg =
     JD.map3 ChatMsg
@@ -347,7 +361,7 @@ channel : String -> String -> Channel.Channel Msg
 channel channelId userName =
     Channel.init channelId
         |> Channel.withPayload (JE.object [ ( "user_name", JE.string userName ) ])
-        |> Channel.on "new_msg" NewMsg
+        |> Channel.on "word_update" WordUpdate
         |> Channel.withDebug
 
 
