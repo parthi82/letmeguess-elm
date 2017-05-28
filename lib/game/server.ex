@@ -63,40 +63,23 @@ defmodule Letmeguess.Game.Server do
 
 
   def handle_cast({:start_game, game_id}, state) do
+     new_state = state
+                 |> get_players()
+                 |> manage_play(state, game_id)
+    {:noreply, new_state}
+  end
+
+  def handle_info({:time_up, game_id}, state) do
+    Logger.debug "time up!"
     new_state = state
-                |> Map.get("players")
-                |> Enum.filter(&(!elem(&1, 1)["drawn"]))
-                |> start_game(state, game_id)
+                |> get_players()
+                |> manage_play(state, game_id)
     {:noreply, new_state}
   end
 
   def handle_cast({:leave, player}, state) do
     {_, new_state} = pop_in(state, ["players", player])
     {:noreply, new_state}
-  end
-
-  def handle_info({:time_up, game_id}, state) do
-    Logger.debug "time up!"
-    players = state
-              |> Map.get("players")
-              |> Enum.filter(&(!elem(&1, 1)["drawn"]))
-    if players == [] do
-      Logger.debug "game ended"
-      stop_game(game_id)
-    else
-      {player, _} = Enum.random(players)
-      Endpoint.broadcast("room:#{game_id}", "new_msg",
-                %{msg: "#{player} is going to draw",
-                  user: player, type: "user_msg"})
-      state = state
-              |> put_in(["players", player, "drawn"], true)
-              |> Map.put("word", "cat")
-      Endpoint.broadcast("room:#{game_id}", "word_update",
-                          %{ "word" =>["*", "*", "*"]})
-      set_timer({:time_up, game_id}, 10_000)
-      {:noreply, state}
-    end
-
   end
 
  ## helper functions
@@ -108,20 +91,48 @@ defmodule Letmeguess.Game.Server do
     end
   end
 
+
+  defp get_players(state) do
+    state
+    |> Map.get("players")
+    |> Enum.filter(&(!elem(&1, 1)["drawn"]))
+  end
+
+  defp manage_play(players, state, game_id) do
+    started = state["started"]
+    cond do
+      !started -> start_game(players, state, game_id)
+      started -> next_round(players, state, game_id)
+    end
+  end
+
+  defp next_round(players, state, game_id) do
+    if players == [] do
+      Logger.debug "game ended"
+      stop_game(game_id)
+    else
+      manage_turn(players, state, game_id)
+    end
+  end
+
+  defp manage_turn(players, state, game_id) do
+    {player, _} = Enum.random(players)
+    Endpoint.broadcast("room:#{game_id}", "new_msg",
+              %{msg: "#{player} is going to draw",
+                user: player, type: "user_msg"})
+    state = state
+            |> put_in(["players", player, "drawn"], true)
+            |> Map.put("word", "cat")
+    Endpoint.broadcast("room:#{game_id}", "word_update",
+                        %{ "word" =>["*", "*", "*"]})
+    timer = set_timer({:time_up, game_id}, 10_000)
+    Map.put(state, "timer", timer)
+  end
+
   defp start_game(players, state, game_id) do
-    if length(players) >= 2 and !state["started"] do
-      Logger.debug "starting the game"
-      {player, _} = Enum.random(players)
-      Endpoint.broadcast("room:#{game_id}", "new_msg",
-                %{msg: "#{player} is going to draw",
-                  user: player, type: "user_msg"})
-      state = state
-              |> put_in(["players", player, "drawn"], true)
-              |> Map.merge(%{"started" => true, "word" => "cat"})
-      Endpoint.broadcast("room:#{game_id}", "word_update",
-                          %{ "word" =>["*", "*", "*"]})
-      set_timer({:time_up, game_id}, 20_000)
-      state
+    state = Map.put(state, "started", true)
+    if length(players) >= 2 do
+      manage_turn(players, state, game_id)
     else
       state
     end
