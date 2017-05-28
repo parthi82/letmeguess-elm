@@ -33,7 +33,11 @@ defmodule Letmeguess.Game.Server do
   end
 
   def start(game_id) do
-    try_cast(game_id, {:start_game, game_id})
+    try_cast(game_id, :start_game)
+  end
+
+  def handle_guess(game_id, player, msg) do
+    try_cast(game_id, {:guess, player, msg})
   end
 
   def get_word(game_id) do
@@ -41,14 +45,14 @@ defmodule Letmeguess.Game.Server do
   end
 
   def start_link(game_id) do
-    GenServer.start_link(__MODULE__, :ok, name: ref(game_id))
+    GenServer.start_link(__MODULE__, game_id, name: ref(game_id))
   end
 
 
  ## Server Callbacks
 
-  def init(:ok) do
-    {:ok, %{"started" => false, "players" => %{}}}
+  def init(game_id) do
+    {:ok, %{"started" => false, "players" => %{}, "game_id" => game_id}}
   end
 
   def handle_call({:join, player}, _from, state) do
@@ -61,26 +65,40 @@ defmodule Letmeguess.Game.Server do
     {:reply, state["word"], state}
   end
 
-
-  def handle_cast({:start_game, game_id}, state) do
+  def handle_cast(:start_game, state) do
      new_state = state
                  |> get_players()
-                 |> manage_play(state, game_id)
+                 |> manage_play(state)
     {:noreply, new_state}
   end
 
-  def handle_info({:time_up, game_id}, state) do
-    Logger.debug "time up!"
-    new_state = state
-                |> get_players()
-                |> manage_play(state, game_id)
-    {:noreply, new_state}
+  def handle_cast({:guess, player, msg}, state) do
+    if state["word"] != msg do
+      game_id = state["game_id"]
+      Endpoint.broadcast("room:#{game_id}", "new_msg",
+               %{msg: msg,
+                 user: player, type: "user_msg"})
+      {:noreply, state}
+    else
+      new_state = handle_found_word(state, player)
+      {:noreply, new_state}
+    end
   end
 
   def handle_cast({:leave, player}, state) do
     {_, new_state} = pop_in(state, ["players", player])
     {:noreply, new_state}
   end
+
+  def handle_info(:time_up, state) do
+    Logger.debug "time up!"
+    new_state = state
+                |> get_players()
+                |> manage_play(state)
+    {:noreply, new_state}
+  end
+
+
 
  ## helper functions
 
@@ -98,41 +116,62 @@ defmodule Letmeguess.Game.Server do
     |> Enum.filter(&(!elem(&1, 1)["drawn"]))
   end
 
-  defp manage_play(players, state, game_id) do
+  defp manage_play(players, state) do
     started = state["started"]
     cond do
-      !started -> start_game(players, state, game_id)
-      started -> next_round(players, state, game_id)
+      !started -> start_game(players, state)
+      started -> next_round(players, state)
     end
   end
 
-  defp next_round(players, state, game_id) do
+  defp next_round(players, state) do
+    game_id = state["game_id"]
     if players == [] do
       Logger.debug "game ended"
       stop_game(game_id)
     else
-      manage_turn(players, state, game_id)
+      manage_turn(players, state)
     end
   end
 
-  defp manage_turn(players, state, game_id) do
+  defp manage_turn(players, state) do
+    game_id = state["game_id"]
     {player, _} = Enum.random(players)
     Endpoint.broadcast("room:#{game_id}", "new_msg",
               %{msg: "#{player} is going to draw",
                 user: player, type: "user_msg"})
+
+    still_guessing = Map.get(state, "players")
+                  |> Map.keys()
+                  |> List.delete(player)
     state = state
             |> put_in(["players", player, "drawn"], true)
-            |> Map.put("word", "cat")
+            |> Map.merge(%{"word" => "cat", "still_guessing" => still_guessing})
     Endpoint.broadcast("room:#{game_id}", "word_update",
                         %{ "word" =>["*", "*", "*"]})
-    timer = set_timer({:time_up, game_id}, 10_000)
+    timer = set_timer(:time_up, 10_000)
     Map.put(state, "timer", timer)
   end
 
-  defp start_game(players, state, game_id) do
+  defp start_game(players, state) do
     state = Map.put(state, "started", true)
     if length(players) >= 2 do
-      manage_turn(players, state, game_id)
+      manage_turn(players, state)
+    else
+      state
+    end
+  end
+
+  defp handle_found_word(state, player) do
+    still_guessing = state["still_guessing"]
+    if Enum.member?(still_guessing, player) do
+      game_id = state["game_id"]
+      Endpoint.broadcast("room:#{game_id}", "new_msg",
+               %{msg: "#{player} found the word",
+                 user: player, type: "user_msg"})
+
+      still_guessing = List.delete(still_guessing, player)
+      Map.put(state, "still_guessing", still_guessing)
     else
       state
     end

@@ -24,14 +24,7 @@ defmodule Letmeguess.RoomChannel do
   def handle_in("new_msg", %{"msg" => body}, socket) do
     user_name = socket.assigns[:user_name]
     room_id = socket.assigns[:room_id]
-    word = GameServer.get_word(room_id)
-    if word != body do
-      broadcast(socket, "new_msg", %{msg: body, user: user_name,
-                                     type: "user_msg"})
-    else
-      broadcast(socket, "new_msg",%{msg: "#{user_name} found the word",
-                                    user: user_name, type: "user_msg"})
-    end
+    GameServer.handle_guess(room_id, user_name, body)
     {:noreply, socket}
   end
 
