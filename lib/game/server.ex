@@ -66,10 +66,7 @@ defmodule Letmeguess.Game.Server do
   end
 
   def handle_cast(:start_game, state) do
-     new_state = state
-                 |> get_players()
-                 |> manage_play(state)
-    {:noreply, new_state}
+    {:noreply, manage_play(state)}
   end
 
   def handle_cast({:guess, player, msg}, state) do
@@ -92,10 +89,7 @@ defmodule Letmeguess.Game.Server do
 
   def handle_info(:time_up, state) do
     Logger.debug "time up!"
-    new_state = state
-                |> get_players()
-                |> manage_play(state)
-    {:noreply, new_state}
+    {:noreply, manage_play(state)}
   end
 
 
@@ -116,16 +110,17 @@ defmodule Letmeguess.Game.Server do
     |> Enum.filter(&(!elem(&1, 1)["drawn"]))
   end
 
-  defp manage_play(players, state) do
+  defp manage_play(state) do
     started = state["started"]
     cond do
-      !started -> start_game(players, state)
-      started -> next_round(players, state)
+      !started -> start_game(state)
+      started -> next_round(state)
     end
   end
 
-  defp next_round(players, state) do
+  defp next_round(state) do
     game_id = state["game_id"]
+    players = get_players(state)
     if players == [] do
       Logger.debug "game ended"
       stop_game(game_id)
@@ -149,11 +144,12 @@ defmodule Letmeguess.Game.Server do
             |> Map.merge(%{"word" => "cat", "still_guessing" => still_guessing})
     Endpoint.broadcast("room:#{game_id}", "word_update",
                         %{ "word" =>["*", "*", "*"]})
-    timer = set_timer(:time_up, 10_000)
+    timer = set_timer(:time_up, 20_000)
     Map.put(state, "timer", timer)
   end
 
-  defp start_game(players, state) do
+  defp start_game(state) do
+    players = get_players(state)
     state = Map.put(state, "started", true)
     if length(players) >= 2 do
       manage_turn(players, state)
@@ -171,7 +167,12 @@ defmodule Letmeguess.Game.Server do
                  user: player, type: "user_msg"})
 
       still_guessing = List.delete(still_guessing, player)
-      Map.put(state, "still_guessing", still_guessing)
+      if still_guessing == [] do
+        :erlang.cancel_timer(state["timer"])
+        next_round(state)
+      else
+        Map.put(state, "still_guessing", still_guessing)
+      end
     else
       state
     end
