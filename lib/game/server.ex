@@ -18,8 +18,9 @@ defmodule Letmeguess.Game.Server do
     end
   end
 
-  def stop_game(game_id) do
-    Logger.debug "Stopping game #{game_id} in supervisor"
+  def stop_game(state) do
+    game_id = state["game_id"]
+    Logger.debug "Stopping game #{game_id}"
     pid = GenServer.whereis(ref(game_id))
     Supervisor.terminate_child(Letmeguess.Game.Supervisor, pid)
   end
@@ -56,9 +57,13 @@ defmodule Letmeguess.Game.Server do
   end
 
   def handle_call({:join, player}, _from, state) do
-    state
-    |> get_in(["players", player])
-    |> join_game(player, state)
+    if !state["started"] do
+      state
+      |> get_in(["players", player])
+      |> join_game(player, state)
+    else
+      {:reply, false, state}
+    end
   end
 
   def handle_call(:get_word, _from, state) do
@@ -92,6 +97,11 @@ defmodule Letmeguess.Game.Server do
     {:noreply, manage_play(state)}
   end
 
+  def handle_info(:count_down, state) do
+    Logger.debug "countdown over, start game!"
+    {:noreply, manage_turn(state)}
+  end
+
 
 
  ## helper functions
@@ -106,12 +116,13 @@ defmodule Letmeguess.Game.Server do
 
   defp get_players(state) do
     state
-    |> Map.get("players")
+    |> Map.get("players", [])
     |> Enum.filter(&(!elem(&1, 1)["drawn"]))
   end
 
   defp manage_play(state) do
     started = state["started"]
+    Logger.debug "started : #{started}"
     cond do
       !started -> start_game(state)
       started -> next_round(state)
@@ -119,19 +130,24 @@ defmodule Letmeguess.Game.Server do
   end
 
   defp next_round(state) do
-    game_id = state["game_id"]
     players = get_players(state)
     if players == [] do
       Logger.debug "game ended"
-      stop_game(game_id)
+      stop_game(state)
     else
-      manage_turn(players, state)
+      count_down(state)
     end
   end
 
-  defp manage_turn(players, state) do
+  defp count_down(state) do
+    timer = set_timer(:count_down, 5_000)
+    Map.put(state, "count_down", timer)
+  end
+
+  defp manage_turn(state) do
     game_id = state["game_id"]
-    {player, _} = Enum.random(players)
+    {player, _} = get_players(state)
+                  |> Enum.random()
     Endpoint.broadcast("room:#{game_id}", "new_msg",
               %{msg: "#{player} is going to draw",
                 user: player, type: "user_msg"})
@@ -141,7 +157,8 @@ defmodule Letmeguess.Game.Server do
                   |> List.delete(player)
     state = state
             |> put_in(["players", player, "drawn"], true)
-            |> Map.merge(%{"word" => "cat", "still_guessing" => still_guessing})
+            |> Map.merge(%{"word" => "cat", "started" => true,
+                           "still_guessing" => still_guessing})
     Endpoint.broadcast("room:#{game_id}", "word_update",
                         %{ "word" =>["*", "*", "*"]})
     timer = set_timer(:time_up, 20_000)
@@ -150,9 +167,12 @@ defmodule Letmeguess.Game.Server do
 
   defp start_game(state) do
     players = get_players(state)
-    state = Map.put(state, "started", true)
     if length(players) >= 2 do
-      manage_turn(players, state)
+       count_down_ref = state["count_down"]
+       if is_reference(count_down_ref) do
+         :erlang.cancel_timer(count_down_ref)
+       end
+       count_down(state)
     else
       state
     end
