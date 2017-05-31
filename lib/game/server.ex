@@ -185,7 +185,8 @@ defmodule Letmeguess.Game.Server do
       Endpoint.broadcast("room:#{game_id}", "new_msg",
                %{msg: "#{player} found the word",
                  user: player, type: "user_msg"})
-
+      {_, state} = get_and_update_in(state, ["players", player, "score"],
+                                     &{&1, &1 + 10})
       still_guessing = List.delete(still_guessing, player)
       if still_guessing == [] do
         :erlang.cancel_timer(state["timer"])
