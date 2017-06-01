@@ -131,7 +131,7 @@ defmodule Letmeguess.Game.Server do
 
   defp next_round(state) do
     players = get_players(state)
-    if players == [] do
+    if Enum.empty?(players) do
       Logger.debug "game ended"
       stop_game(state)
     else
@@ -188,7 +188,7 @@ defmodule Letmeguess.Game.Server do
       {_, state} = get_and_update_in(state, ["players", player, "score"],
                                      &{&1, &1 + 10})
       still_guessing = List.delete(still_guessing, player)
-      if still_guessing == [] do
+      if Enum.empty?(still_guessing) do
         :erlang.cancel_timer(state["timer"])
         next_round(state)
       else
