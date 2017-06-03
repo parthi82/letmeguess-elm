@@ -16,8 +16,7 @@ defmodule Letmeguess.RoomChannel do
   end
 
   def handle_info(%{"joined" => user_name, "room" => room_id}, socket) do
-      broadcast socket, "new_msg", %{msg: "", user: user_name, type: "joined"}
-      GameServer.start(room_id)
+      GameServer.after_join(room_id, user_name)
       {:noreply, socket}
   end
 

@@ -3,7 +3,7 @@ defmodule Letmeguess.Game.Server do
 
   require Logger
 
-  @player_init %{"drawn" => false, "score" => 0}
+
 
   alias Letmeguess.Endpoint
 
@@ -33,8 +33,8 @@ defmodule Letmeguess.Game.Server do
     try_cast(game_id, {:leave, player})
   end
 
-  def start(game_id) do
-    try_cast(game_id, :start_game)
+  def after_join(game_id, player) do
+    try_cast(game_id, {:after_join, player})
   end
 
   def handle_guess(game_id, player, msg) do
@@ -70,7 +70,11 @@ defmodule Letmeguess.Game.Server do
     {:reply, state["word"], state}
   end
 
-  def handle_cast(:start_game, state) do
+  def handle_cast({:after_join, player}, state) do
+    game_id = state["game_id"]
+    players =  Map.values(state["players"])
+    Endpoint.broadcast("room:#{game_id}", "joined",
+                      %{players: players, joined: player})
     {:noreply, manage_play(state)}
   end
 
@@ -108,7 +112,8 @@ defmodule Letmeguess.Game.Server do
 
   defp join_game(value, player, state) do
     case value do
-      nil -> {:reply, true, put_in(state["players"][player], @player_init)}
+      nil -> {:reply, true, put_in(state["players"][player],
+                                   player_default(player))}
       _ -> {:reply, false, state}
     end
   end
@@ -198,6 +203,8 @@ defmodule Letmeguess.Game.Server do
       state
     end
   end
+
+  defp player_default(name), do: %{"drawn" => false, "score" => 0, "name" => name}
 
   defp set_timer(msg, time) do
     Process.send_after(self(), msg, time)

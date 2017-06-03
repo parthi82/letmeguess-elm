@@ -47,6 +47,13 @@ type alias Model =
     , isDraging : Bool
     , paths : List (List Position)
     , word : List String
+    , players : List Player
+    }
+
+
+type alias Player =
+    { name : String
+    , score : Int
     }
 
 
@@ -72,7 +79,7 @@ type GameState
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( Model Material.model [] "" flags NotStarted "" False [] [], Cmd.none )
+    ( Model Material.model [] "" flags NotStarted "" False [] [] [], Cmd.none )
 
 
 
@@ -86,6 +93,7 @@ type Msg
     | ChatInput String
     | NewMsg JE.Value
     | WordUpdate JE.Value
+    | PlayerJoined JE.Value
     | SendMsg
     | MouseDown Position
     | MouseUp Position
@@ -113,12 +121,19 @@ messageView payload =
         messagText (payload.user ++ " has left")
 
 
-scoreView : Html a
-scoreView =
-    div [ id "score_view" ]
-        [ h4 [] [ text "score_view" ]
-        , p [] [ text "This is score_view" ]
-        ]
+scoreText : Player -> Html msg
+scoreText player =
+    let
+        value =
+            player.name ++ ": " ++ (toString player.score)
+    in
+        Lists.li [] [ div [] [ text value ] ]
+
+
+scoreView : List Player -> Html msg
+scoreView scores =
+    Lists.ul [ Options.id "score_view" ]
+        (List.map scoreText scores)
 
 
 drawingView : Model -> Html Msg
@@ -192,7 +207,7 @@ chatView model =
 gameView : Model -> Html Msg
 gameView model =
     div [ id "game_view" ]
-        [ scoreView
+        [ scoreView model.players
         , drawingView model
         , chatView model
         ]
@@ -310,6 +325,14 @@ update msg model =
                 Err err ->
                     ( model, Cmd.none )
 
+        PlayerJoined raw ->
+            case JD.decodeValue decodePlayers raw of
+                Ok players ->
+                    ( { model | players = players }, Cmd.none )
+
+                Err err ->
+                    ( Debug.log "unable to decode : " model, Cmd.none )
+
         MouseDown xy ->
             ( { model | isDraging = True, paths = [ xy ] :: model.paths }, Cmd.none )
 
@@ -340,6 +363,18 @@ decodeWord =
     JD.field "word" (JD.list JD.string)
 
 
+decodePlayer : JD.Decoder Player
+decodePlayer =
+    JD.map2 Player
+        (JD.field "name" JD.string)
+        (JD.field "score" JD.int)
+
+
+decodePlayers : JD.Decoder (List Player)
+decodePlayers =
+    JD.field "players" (JD.list decodePlayer)
+
+
 decodeChatMsg : JD.Decoder ChatMsg
 decodeChatMsg =
     JD.map3 ChatMsg
@@ -363,6 +398,7 @@ channel channelId userName =
         |> Channel.withPayload (JE.object [ ( "user_name", JE.string userName ) ])
         |> Channel.on "new_msg" NewMsg
         |> Channel.on "word_update" WordUpdate
+        |> Channel.on "joined" PlayerJoined
         |> Channel.withDebug
 
 
