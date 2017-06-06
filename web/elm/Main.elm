@@ -95,6 +95,7 @@ type Msg
     | WordUpdate JE.Value
     | PlayerJoined JE.Value
     | PlayerLeft JE.Value
+    | ScoreUpdate JE.Value
     | SendMsg
     | MouseDown Position
     | MouseUp Position
@@ -116,6 +117,8 @@ messageView : ChatMsg -> Html msg
 messageView payload =
     if payload.msgType == "user_msg" then
         messagText (payload.user ++ ": " ++ payload.msg)
+    else if payload.msgType == "found_word" then
+        messagText (payload.user ++ " has found the word")
     else if payload.msgType == "joined" then
         messagText (payload.user ++ " has joined")
     else
@@ -372,6 +375,37 @@ update msg model =
                 Err err ->
                     ( Debug.log "unable to decode : " model, Cmd.none )
 
+        ScoreUpdate raw ->
+            case JD.decodeValue decodePlayer raw of
+                Ok player ->
+                    let
+                        updateScore : Player -> Player -> Player
+                        updateScore player item =
+                            if player.name == item.name then
+                                player
+                            else
+                                item
+
+                        players =
+                            List.map (updateScore player) model.players
+
+                        chat_msg =
+                            { user = player.name
+                            , msg = ""
+                            , msgType = "found_word"
+                            }
+
+                        messages =
+                            model.messages ++ [ chat_msg ]
+
+                        new_model =
+                            { model | messages = messages, players = players }
+                    in
+                        ( new_model, Cmd.none )
+
+                Err err ->
+                    ( Debug.log "unable to decode : " model, Cmd.none )
+
         MouseDown xy ->
             ( { model | isDraging = True, paths = [ xy ] :: model.paths }, Cmd.none )
 
@@ -447,6 +481,7 @@ channel channelId userName =
         |> Channel.on "word_update" WordUpdate
         |> Channel.on "joined" PlayerJoined
         |> Channel.on "left" PlayerLeft
+        |> Channel.on "score" ScoreUpdate
         |> Channel.withDebug
 
 
