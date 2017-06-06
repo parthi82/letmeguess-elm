@@ -327,8 +327,18 @@ update msg model =
 
         PlayerJoined raw ->
             case JD.decodeValue decodePlayers raw of
-                Ok players ->
-                    ( { model | players = players }, Cmd.none )
+                Ok res ->
+                    let
+                        chat_msg =
+                            { user = res.player, msg = "", msgType = "joined" }
+
+                        messages =
+                            model.messages ++ [ chat_msg ]
+
+                        new_model =
+                            { model | messages = messages, players = res.players }
+                    in
+                        ( new_model, Cmd.none )
 
                 Err err ->
                     ( Debug.log "unable to decode : " model, Cmd.none )
@@ -370,9 +380,17 @@ decodePlayer =
         (JD.field "score" JD.int)
 
 
-decodePlayers : JD.Decoder (List Player)
+type alias PlayersUpdate =
+    { player : String
+    , players : List Player
+    }
+
+
+decodePlayers : JD.Decoder PlayersUpdate
 decodePlayers =
-    JD.field "players" (JD.list decodePlayer)
+    JD.map2 PlayersUpdate
+        (JD.field "joined" JD.string)
+        (JD.field "players" (JD.list decodePlayer))
 
 
 decodeChatMsg : JD.Decoder ChatMsg
