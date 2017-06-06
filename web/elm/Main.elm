@@ -94,6 +94,7 @@ type Msg
     | NewMsg JE.Value
     | WordUpdate JE.Value
     | PlayerJoined JE.Value
+    | PlayerLeft JE.Value
     | SendMsg
     | MouseDown Position
     | MouseUp Position
@@ -343,6 +344,34 @@ update msg model =
                 Err err ->
                     ( Debug.log "unable to decode : " model, Cmd.none )
 
+        PlayerLeft raw ->
+            case JD.decodeValue decodePlayer raw of
+                Ok player ->
+                    let
+                        hasNotLeft : String -> Player -> Bool
+                        hasNotLeft name player =
+                            if name == player.name then
+                                False
+                            else
+                                True
+
+                        players =
+                            List.filter (hasNotLeft player.name) model.players
+
+                        chat_msg =
+                            { user = player.name, msg = "", msgType = "left" }
+
+                        messages =
+                            model.messages ++ [ chat_msg ]
+
+                        new_model =
+                            { model | messages = messages, players = players }
+                    in
+                        ( new_model, Cmd.none )
+
+                Err err ->
+                    ( Debug.log "unable to decode : " model, Cmd.none )
+
         MouseDown xy ->
             ( { model | isDraging = True, paths = [ xy ] :: model.paths }, Cmd.none )
 
@@ -417,6 +446,7 @@ channel channelId userName =
         |> Channel.on "new_msg" NewMsg
         |> Channel.on "word_update" WordUpdate
         |> Channel.on "joined" PlayerJoined
+        |> Channel.on "left" PlayerLeft
         |> Channel.withDebug
 
 

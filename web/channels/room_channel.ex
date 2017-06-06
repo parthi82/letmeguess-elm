@@ -35,7 +35,7 @@ defmodule Letmeguess.RoomChannel do
     user_name = socket.assigns[:user_name]
     room_id = socket.assigns[:room_id]
     GameServer.leave(room_id, user_name)
-    broadcast socket, "new_msg", %{msg: "", user: user_name, type: "left"}
+    broadcast socket, "left", %{ "name" => user_name, "score": 0}
     {:shutdown, :closed}
   end
 
