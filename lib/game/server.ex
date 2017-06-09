@@ -153,9 +153,9 @@ defmodule Letmeguess.Game.Server do
     game_id = state["game_id"]
     {player, _} = get_players(state)
                   |> Enum.random()
-    Endpoint.broadcast("room:#{game_id}", "new_msg",
-              %{msg: "#{player} is going to draw",
-                user: player, type: "user_msg"})
+
+    Endpoint.broadcast("room:#{game_id}", "going_to_draw",
+                       %{ "name" => player, "score": 0})
 
     still_guessing = Map.get(state, "players")
                   |> Map.keys()

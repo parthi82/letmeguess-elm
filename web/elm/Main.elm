@@ -48,6 +48,7 @@ type alias Model =
     , paths : List (List Position)
     , word : List String
     , players : List Player
+    , isDrawing : Bool
     }
 
 
@@ -79,7 +80,7 @@ type GameState
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( Model Material.model [] "" flags NotStarted "" False [] [] [], Cmd.none )
+    ( Model Material.model [] "" flags NotStarted "" False [] [] [] True, Cmd.none )
 
 
 
@@ -96,6 +97,7 @@ type Msg
     | PlayerJoined JE.Value
     | PlayerLeft JE.Value
     | ScoreUpdate JE.Value
+    | GoingToDraw JE.Value
     | SendMsg
     | MouseDown Position
     | MouseUp Position
@@ -117,6 +119,8 @@ messageView : ChatMsg -> Html msg
 messageView payload =
     if payload.msgType == "user_msg" then
         messagText (payload.user ++ ": " ++ payload.msg)
+    else if payload.msgType == "going_to_draw" then
+        messagText (payload.user ++ " is going to draw")
     else if payload.msgType == "found_word" then
         messagText (payload.user ++ " has found the word")
     else if payload.msgType == "joined" then
@@ -329,6 +333,36 @@ update msg model =
                 Err err ->
                     ( model, Cmd.none )
 
+        GoingToDraw raw ->
+            case JD.decodeValue decodePlayer raw of
+                Ok res ->
+                    let
+                        isPlayerDrawing res model =
+                            if res.name == model.userName then
+                                True
+                            else
+                                False
+
+                        chat_msg =
+                            { user = res.name
+                            , msg = ""
+                            , msgType = "going_to_draw"
+                            }
+
+                        messages =
+                            model.messages ++ [ chat_msg ]
+
+                        new_model =
+                            { model
+                                | messages = messages
+                                , isDrawing = (isPlayerDrawing res model)
+                            }
+                    in
+                        ( new_model, Cmd.none )
+
+                Err err ->
+                    ( model, Cmd.none )
+
         PlayerJoined raw ->
             case JD.decodeValue decodePlayers raw of
                 Ok res ->
@@ -479,6 +513,7 @@ channel channelId userName =
         |> Channel.withPayload (JE.object [ ( "user_name", JE.string userName ) ])
         |> Channel.on "new_msg" NewMsg
         |> Channel.on "word_update" WordUpdate
+        |> Channel.on "going_to_draw" GoingToDraw
         |> Channel.on "joined" PlayerJoined
         |> Channel.on "left" PlayerLeft
         |> Channel.on "score" ScoreUpdate
