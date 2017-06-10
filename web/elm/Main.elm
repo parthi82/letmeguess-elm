@@ -98,6 +98,7 @@ type Msg
     | PlayerLeft JE.Value
     | ScoreUpdate JE.Value
     | GoingToDraw JE.Value
+    | GotAnswer JE.Value
     | SendMsg
     | MouseDown Position
     | MouseUp Position
@@ -289,6 +290,22 @@ onEnter msg =
 -- UPDATE
 
 
+handleIsDrawing : String -> Model -> ( Model, Cmd Msg )
+handleIsDrawing name model =
+    if name == model.userName then
+        let
+            req =
+                Push.init model.flags.channel "get_answer"
+                    |> Push.onOk GotAnswer
+
+            new_model =
+                { model | isDrawing = True }
+        in
+            ( new_model, push model.flags.socketUrl req )
+    else
+        ( model, Cmd.none )
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -337,28 +354,29 @@ update msg model =
             case JD.decodeValue decodePlayer raw of
                 Ok res ->
                     let
-                        isPlayerDrawing res model =
-                            if res.name == model.userName then
-                                True
-                            else
-                                False
-
                         chat_msg =
                             { user = res.name
                             , msg = ""
                             , msgType = "going_to_draw"
                             }
 
-                        messages =
-                            model.messages ++ [ chat_msg ]
-
                         new_model =
                             { model
-                                | messages = messages
-                                , isDrawing = (isPlayerDrawing res model)
+                                | messages = model.messages ++ [ chat_msg ]
                             }
+
+                        return_val =
+                            handleIsDrawing res.name new_model
                     in
-                        ( new_model, Cmd.none )
+                        return_val
+
+                Err err ->
+                    ( model, Cmd.none )
+
+        GotAnswer raw ->
+            case JD.decodeValue decodeWord raw of
+                Ok word ->
+                    ( { model | word = word }, Cmd.none )
 
                 Err err ->
                     ( model, Cmd.none )

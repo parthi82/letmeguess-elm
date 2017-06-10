@@ -27,6 +27,13 @@ defmodule Letmeguess.RoomChannel do
     {:noreply, socket}
   end
 
+  def handle_in("get_answer", _, socket) do
+    user_name = socket.assigns[:user_name]
+    room_id = socket.assigns[:room_id]
+    data = %{word: String.graphemes("cat")}
+    {:reply, {:ok, data}, socket}
+  end
+
   def leave(_reason, socket) do
     {:ok, socket}
   end
