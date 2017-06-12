@@ -30,7 +30,8 @@ defmodule Letmeguess.RoomChannel do
   def handle_in("get_answer", _, socket) do
     user_name = socket.assigns[:user_name]
     room_id = socket.assigns[:room_id]
-    data = %{word: String.graphemes("cat")}
+    word = GameServer.get_answer(room_id, user_name)
+    data = %{word: String.graphemes(word)}
     {:reply, {:ok, data}, socket}
   end
 

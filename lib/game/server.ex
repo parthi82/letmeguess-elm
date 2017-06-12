@@ -18,6 +18,10 @@ defmodule Letmeguess.Game.Server do
     end
   end
 
+  def get_answer(game_id, player) do
+    try_call(game_id, {:get_answer, player})
+  end
+
   def stop_game(state) do
     game_id = state["game_id"]
     Logger.debug "Stopping game #{game_id}"
@@ -61,6 +65,15 @@ defmodule Letmeguess.Game.Server do
       {:reply, false, state}
     end
   end
+
+  def handle_call({:get_answer, player}, _from, state) do
+     if state["drawing"] == player do
+       {:reply, state["word"], state}
+     else
+       {:reply, "", state}
+     end
+  end
+
 
 
   def handle_cast({:after_join, player}, state) do
@@ -160,6 +173,7 @@ defmodule Letmeguess.Game.Server do
     state = state
             |> put_in(["players", player, "drawn"], true)
             |> Map.merge(%{"word" => word, "started" => true,
+                           "drawing" => player,
                            "still_guessing" => still_guessing})
     Endpoint.broadcast("room:#{game_id}", "word_update",
                         %{ "word" => secret })
