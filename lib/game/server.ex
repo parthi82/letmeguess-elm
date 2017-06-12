@@ -3,9 +3,9 @@ defmodule Letmeguess.Game.Server do
 
   require Logger
 
-
-
   alias Letmeguess.Endpoint
+
+  @words File.read!("priv/static/words.txt") |> String.split("\n", trim: true)
 
   ## Client Api
 
@@ -41,10 +41,6 @@ defmodule Letmeguess.Game.Server do
     try_cast(game_id, {:guess, player, msg})
   end
 
-  def get_word(game_id) do
-    try_call(game_id, :get_word)
-  end
-
   def start_link(game_id) do
     GenServer.start_link(__MODULE__, game_id, name: ref(game_id))
   end
@@ -66,9 +62,6 @@ defmodule Letmeguess.Game.Server do
     end
   end
 
-  def handle_call(:get_word, _from, state) do
-    {:reply, state["word"], state}
-  end
 
   def handle_cast({:after_join, player}, state) do
     game_id = state["game_id"]
@@ -160,12 +153,17 @@ defmodule Letmeguess.Game.Server do
     still_guessing = Map.get(state, "players")
                   |> Map.keys()
                   |> List.delete(player)
+
+    word = random_word()
+    letters = String.graphemes(word)
+    secret = for _ <- letters, do: "*"
     state = state
             |> put_in(["players", player, "drawn"], true)
-            |> Map.merge(%{"word" => "cat", "started" => true,
+            |> Map.merge(%{"word" => word, "started" => true,
                            "still_guessing" => still_guessing})
     Endpoint.broadcast("room:#{game_id}", "word_update",
-                        %{ "word" =>["*", "*", "*"]})
+                        %{ "word" => secret })
+
     timer = set_timer(:time_up, 20_000)
     Map.put(state, "timer", timer)
   end
@@ -207,6 +205,10 @@ defmodule Letmeguess.Game.Server do
 
   defp set_timer(msg, time) do
     Process.send_after(self(), msg, time)
+  end
+
+  defp random_word do
+    @words |> Enum.random
   end
 
   defp try_call(game_id, message) do
