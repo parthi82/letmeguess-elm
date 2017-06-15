@@ -204,11 +204,12 @@ defmodule Letmeguess.Game.Server do
       Endpoint.broadcast("room:#{game_id}", "score",
                          get_in(state, ["players", player]))
       still_guessing = List.delete(still_guessing, player)
+      state = Map.put(state, "still_guessing", still_guessing)
       if Enum.empty?(still_guessing) do
         :erlang.cancel_timer(state["timer"])
         next_round(state)
       else
-        Map.put(state, "still_guessing", still_guessing)
+        state
       end
     else
       state
