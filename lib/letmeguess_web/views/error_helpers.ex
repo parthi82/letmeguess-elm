@@ -1,4 +1,4 @@
-defmodule Letmeguess.ErrorHelpers do
+defmodule LetmeguessWeb.ErrorHelpers do
   @moduledoc """
   Conveniences for translating and building error messages.
   """

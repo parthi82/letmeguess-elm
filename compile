@@ -1,5 +1,5 @@
 info "Building Phoenix static assets"
-cd web/elm && elm-install
+cd assets/elm && elm-install
 cd ../..
 NODE_ENV=production webpack -p
 mix phoenix.digest

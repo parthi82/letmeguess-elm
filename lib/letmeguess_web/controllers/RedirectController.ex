@@ -1,5 +1,5 @@
-defmodule Letmeguess.RedirectController do
-  use Letmeguess.Web, :controller
+defmodule LetmeguessWeb.RedirectController do
+  use LetmeguessWeb, :controller
 
   def handle_redirect(conn, _params) do
     # render conn, "index.html"

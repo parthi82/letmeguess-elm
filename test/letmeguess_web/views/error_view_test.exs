@@ -1,21 +1,21 @@
-defmodule Letmeguess.ErrorViewTest do
-  use Letmeguess.ConnCase, async: true
+defmodule LetmeguessWeb.ErrorViewTest do
+  use LetmeguessWeb.ConnCase, async: true
 
   # Bring render/3 and render_to_string/3 for testing custom views
   import Phoenix.View
 
   test "renders 404.html" do
-    assert render_to_string(Letmeguess.ErrorView, "404.html", []) ==
+    assert render_to_string(LetmeguessWeb.ErrorView, "404.html", []) ==
            "Page not found"
   end
 
   test "render 500.html" do
-    assert render_to_string(Letmeguess.ErrorView, "500.html", []) ==
+    assert render_to_string(LetmeguessWeb.ErrorView, "500.html", []) ==
            "Internal server error"
   end
 
   test "render any other" do
-    assert render_to_string(Letmeguess.ErrorView, "505.html", []) ==
+    assert render_to_string(LetmeguessWeb.ErrorView, "505.html", []) ==
            "Internal server error"
   end
 end

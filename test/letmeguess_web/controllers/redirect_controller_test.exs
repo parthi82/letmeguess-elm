@@ -1,5 +1,5 @@
-defmodule Letmeguess.RedirectControllerTest do
-  use Letmeguess.ConnCase
+defmodule LetmeguessWeb.RedirectControllerTest do
+  use LetmeguessWeb.ConnCase
 
   test "GET /", %{conn: conn} do
     conn = get conn, "/"

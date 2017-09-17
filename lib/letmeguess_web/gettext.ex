@@ -1,4 +1,4 @@
-defmodule Letmeguess.Gettext do
+defmodule LetmeguessWeb.Gettext do
   @moduledoc """
   A module providing Internationalization with a gettext-based API.
 

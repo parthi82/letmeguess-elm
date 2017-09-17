@@ -1,5 +1,5 @@
-defmodule Letmeguess.PageControllerTest do
-  use Letmeguess.ConnCase
+defmodule LetmeguessWeb.PageControllerTest do
+  use LetmeguessWeb.ConnCase
 
   test "GET /*", %{conn: conn} do
     conn = get conn, "/*"

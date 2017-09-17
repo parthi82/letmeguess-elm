@@ -1,4 +1,4 @@
-defmodule Letmeguess.RoomChannel do
+defmodule LetmeguessWeb.RoomChannel do
   use Phoenix.Channel
 
   alias Letmeguess.Game.Server, as: GameServer

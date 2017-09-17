@@ -1,4 +1,4 @@
-defmodule Letmeguess.Web do
+defmodule LetmeguessWeb do
   @moduledoc """
   A module that keeps using definitions for controllers,
   views and so on.
@@ -24,16 +24,17 @@ defmodule Letmeguess.Web do
 
   def controller do
     quote do
-      use Phoenix.Controller
+      use Phoenix.Controller, namespace: LetmeguessWeb
 
-      import Letmeguess.Router.Helpers
-      import Letmeguess.Gettext
+      import LetmeguessWeb.Router.Helpers
+      import LetmeguessWeb.Gettext
     end
   end
 
   def view do
     quote do
-      use Phoenix.View, root: "web/templates"
+      use Phoenix.View, root: "lib/letmeguess_web/templates",
+                        namespace: LetmeguessWeb
 
       # Import convenience functions from controllers
       import Phoenix.Controller, only: [get_csrf_token: 0, get_flash: 2, view_module: 1]
@@ -41,9 +42,9 @@ defmodule Letmeguess.Web do
       # Use all HTML functionality (forms, tags, etc)
       use Phoenix.HTML
 
-      import Letmeguess.Router.Helpers
-      import Letmeguess.ErrorHelpers
-      import Letmeguess.Gettext
+      import LetmeguessWeb.Router.Helpers
+      import LetmeguessWeb.ErrorHelpers
+      import LetmeguessWeb.Gettext
     end
   end
 
@@ -56,7 +57,7 @@ defmodule Letmeguess.Web do
   def channel do
     quote do
       use Phoenix.Channel
-      import Letmeguess.Gettext
+      import LetmeguessWeb.Gettext
     end
   end
 

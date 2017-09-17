@@ -1,7 +1,7 @@
-defmodule Letmeguess.RoomChannelTest  do
-  use Letmeguess.ChannelCase
+defmodule LetmeguessWeb.RoomChannelTest  do
+  use LetmeguessWeb.ChannelCase
 
-  alias Letmeguess.UserSocket
+  alias LetmeguessWeb.UserSocket
 
   setup do
     {:ok, socket} = connect UserSocket, %{"some" => "params"}

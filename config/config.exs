@@ -6,10 +6,10 @@
 use Mix.Config
 
 # Configures the endpoint
-config :letmeguess, Letmeguess.Endpoint,
+config :letmeguess, LetmeguessWeb.Endpoint,
   url: [host: "localhost"],
   secret_key_base: "6jlsjoXUR2vnkolbUALH46dwyFz0NnMe26D80q6DKuPdXlUCTj/ZwqB85U7XzjVX",
-  render_errors: [view: Letmeguess.ErrorView, accepts: ~w(html json)],
+  render_errors: [view: LetmeguessWeb.ErrorView, accepts: ~w(html json)],
   pubsub: [name: Letmeguess.PubSub,
            adapter: Phoenix.PubSub.PG2]
 

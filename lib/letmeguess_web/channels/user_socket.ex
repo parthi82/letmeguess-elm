@@ -1,8 +1,8 @@
-defmodule Letmeguess.UserSocket do
+defmodule LetmeguessWeb.UserSocket do
   use Phoenix.Socket
 
   ## Channels
-  channel "room:*", Letmeguess.RoomChannel
+  channel "room:*", LetmeguessWeb.RoomChannel
 
   ## Transports
   transport :websocket, Phoenix.Transports.WebSocket

@@ -3,7 +3,7 @@ defmodule Letmeguess.Game.Server do
 
   require Logger
 
-  alias Letmeguess.Endpoint
+  alias LetmeguessWeb.Endpoint
 
   @words File.read!("priv/static/words.txt") |> String.split("\n", trim: true)
 

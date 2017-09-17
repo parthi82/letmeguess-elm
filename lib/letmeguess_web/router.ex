@@ -1,5 +1,5 @@
-defmodule Letmeguess.Router do
-  use Letmeguess.Web, :router
+defmodule LetmeguessWeb.Router do
+  use LetmeguessWeb, :router
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -13,7 +13,7 @@ defmodule Letmeguess.Router do
     plug :accepts, ["json"]
   end
 
-  scope "/", Letmeguess do
+  scope "/", LetmeguessWeb do
     pipe_through :browser # Use the default browser stack
 
     get "/", RedirectController, :handle_redirect

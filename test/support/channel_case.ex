@@ -1,4 +1,4 @@
-defmodule Letmeguess.ChannelCase do
+defmodule LetmeguessWeb.ChannelCase do
   @moduledoc """
   This module defines the test case to be used by
   channel tests.
@@ -22,7 +22,7 @@ defmodule Letmeguess.ChannelCase do
 
 
       # The default endpoint for testing
-      @endpoint Letmeguess.Endpoint
+      @endpoint LetmeguessWeb.Endpoint
     end
   end
 

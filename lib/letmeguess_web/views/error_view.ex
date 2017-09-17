@@ -1,5 +1,5 @@
-defmodule Letmeguess.ErrorView do
-  use Letmeguess.Web, :view
+defmodule LetmeguessWeb.ErrorView do
+  use LetmeguessWeb, :view
 
   def render("404.html", _assigns) do
     "Page not found"

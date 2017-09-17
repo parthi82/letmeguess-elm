@@ -17,13 +17,13 @@ defmodule Letmeguess.Mixfile do
   #
   # Type `mix help compile.app` for more information.
   def application do
-    [mod: {Letmeguess, []},
+    [mod: {Letmeguess.Application, []},
      applications: [:phoenix, :phoenix_pubsub, :phoenix_html, :cowboy, :logger, :gettext]]
   end
 
   # Specifies which paths to compile per environment.
-  defp elixirc_paths(:test), do: ["lib", "web", "test/support"]
-  defp elixirc_paths(_),     do: ["lib", "web"]
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_),     do: ["lib"]
 
   # Specifies your project dependencies.
   #
