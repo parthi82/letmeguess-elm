@@ -3,4 +3,5 @@ pwd
 cd ./elm && elm-install
 cd ..
 NODE_ENV=production ./node_modules/webpack/bin/webpack.js -p -d
-mix phoenix.digest
+cd ..
+mix phx.digest
