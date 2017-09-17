@@ -1,4 +1,5 @@
 info "Building Phoenix static assets"
+pwd
 cd ./assets/elm
 elm-install
 cd ..
