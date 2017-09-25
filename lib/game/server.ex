@@ -5,7 +5,8 @@ defmodule Letmeguess.Game.Server do
 
   alias LetmeguessWeb.Endpoint
 
-  @words File.read!("priv/static/words.txt") |> String.split("\n", trim: true)
+  @words File.read!("priv/static/words.txt")
+         |> String.split("\n", trim: true)
 
   ## Client Api
 
@@ -164,20 +165,23 @@ defmodule Letmeguess.Game.Server do
                        %{ "name" => player, "score": 0})
 
     still_guessing = Map.get(state, "players")
-                  |> Map.keys()
-                  |> List.delete(player)
+                    |> Map.keys()
+                    |> List.delete(player)
 
     word = random_word()
     letters = String.graphemes(word)
     secret = for _ <- letters, do: "*"
+    values = %{
+      "word" => word,
+      "started" => true,
+      "drawing" => player,
+      "still_guessing" => still_guessing
+    }
     state = state
             |> put_in(["players", player, "drawn"], true)
-            |> Map.merge(%{"word" => word, "started" => true,
-                           "drawing" => player,
-                           "still_guessing" => still_guessing})
+            |> Map.merge(values)
     Endpoint.broadcast("room:#{game_id}", "word_update",
-                        %{ "word" => secret })
-
+                       %{ "word" => secret })
     timer = set_timer(:time_up, 20_000)
     Map.put(state, "timer", timer)
   end
@@ -216,7 +220,13 @@ defmodule Letmeguess.Game.Server do
     end
   end
 
-  defp player_default(name), do: %{"drawn" => false, "score" => 0, "name" => name}
+  defp player_default(name) do
+    %{
+      "drawn" => false,
+      "score" => 0,
+      "name" => name
+    }
+  end
 
   defp set_timer(msg, time) do
     Process.send_after(self(), msg, time)
