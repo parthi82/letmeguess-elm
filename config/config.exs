@@ -10,8 +10,7 @@ config :letmeguess, LetmeguessWeb.Endpoint,
   url: [host: "localhost"],
   secret_key_base: "6jlsjoXUR2vnkolbUALH46dwyFz0NnMe26D80q6DKuPdXlUCTj/ZwqB85U7XzjVX",
   render_errors: [view: LetmeguessWeb.ErrorView, accepts: ~w(html json)],
-  pubsub: [name: Letmeguess.PubSub,
-           adapter: Phoenix.PubSub.PG2]
+  pubsub: [name: Letmeguess.PubSub, adapter: Phoenix.PubSub.PG2]
 
 # Configures Elixir's Logger
 config :logger, :console,
@@ -20,4 +19,4 @@ config :logger, :console,
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
-import_config "#{Mix.env}.exs"
+import_config "#{Mix.env()}.exs"

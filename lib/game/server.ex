@@ -14,6 +14,7 @@ defmodule Letmeguess.Game.Server do
     case GenServer.whereis(ref(game_id)) do
       nil ->
         Supervisor.start_child(Letmeguess.Game.Supervisor, [game_id])
+
       _game_ref ->
         {:error, :game_already_exists}
     end
@@ -25,7 +26,7 @@ defmodule Letmeguess.Game.Server do
 
   def stop_game(state) do
     game_id = state["game_id"]
-    Logger.debug "Stopping game #{game_id}"
+    Logger.debug("Stopping game #{game_id}")
     pid = GenServer.whereis(ref(game_id))
     Supervisor.terminate_child(Letmeguess.Game.Supervisor, pid)
   end
@@ -50,8 +51,7 @@ defmodule Letmeguess.Game.Server do
     GenServer.start_link(__MODULE__, game_id, name: ref(game_id))
   end
 
-
- ## Server Callbacks
+  ## Server Callbacks
 
   def init(game_id) do
     {:ok, %{"started" => false, "players" => %{}, "game_id" => game_id}}
@@ -68,29 +68,26 @@ defmodule Letmeguess.Game.Server do
   end
 
   def handle_call({:get_answer, player}, _from, state) do
-     if state["drawing"] == player do
-       {:reply, state["word"], state}
-     else
-       {:reply, "", state}
-     end
+    if state["drawing"] == player do
+      {:reply, state["word"], state}
+    else
+      {:reply, "", state}
+    end
   end
-
-
 
   def handle_cast({:after_join, player}, state) do
     game_id = state["game_id"]
-    players =  Map.values(state["players"])
-    Endpoint.broadcast("room:#{game_id}", "joined",
-                      %{players: players, joined: player})
+    players = Map.values(state["players"])
+    Endpoint.broadcast("room:#{game_id}", "joined", %{players: players, joined: player})
     {:noreply, manage_play(state)}
   end
 
   def handle_cast({:guess, player, msg}, state) do
     if state["word"] != msg do
       game_id = state["game_id"]
-      Endpoint.broadcast("room:#{game_id}", "new_msg",
-               %{msg: msg,
-                 user: player, type: "user_msg"})
+
+      Endpoint.broadcast("room:#{game_id}", "new_msg", %{msg: msg, user: player, type: "user_msg"})
+
       {:noreply, state}
     else
       new_state = handle_found_word(state, player)
@@ -104,27 +101,23 @@ defmodule Letmeguess.Game.Server do
   end
 
   def handle_info(:time_up, state) do
-    Logger.debug "time up!"
+    Logger.debug("time up!")
     {:noreply, manage_play(state)}
   end
 
   def handle_info(:count_down, state) do
-    Logger.debug "countdown over, start game!"
+    Logger.debug("countdown over, start game!")
     {:noreply, manage_turn(state)}
   end
 
-
-
- ## helper functions
+  ## helper functions
 
   defp join_game(value, player, state) do
     case value do
-      nil -> {:reply, true, put_in(state["players"][player],
-                                   player_default(player))}
+      nil -> {:reply, true, put_in(state["players"][player], player_default(player))}
       _ -> {:reply, false, state}
     end
   end
-
 
   defp get_players(state) do
     state
@@ -134,7 +127,8 @@ defmodule Letmeguess.Game.Server do
 
   defp manage_play(state) do
     started = state["started"]
-    Logger.debug "started : #{started}"
+    Logger.debug("started : #{started}")
+
     cond do
       !started -> start_game(state)
       started -> next_round(state)
@@ -143,8 +137,9 @@ defmodule Letmeguess.Game.Server do
 
   defp next_round(state) do
     players = get_players(state)
+
     if Enum.empty?(players) do
-      Logger.debug "game ended"
+      Logger.debug("game ended")
       stop_game(state)
     else
       count_down(state)
@@ -158,42 +153,50 @@ defmodule Letmeguess.Game.Server do
 
   defp manage_turn(state) do
     game_id = state["game_id"]
-    {player, _} = get_players(state)
-                  |> Enum.random()
 
-    Endpoint.broadcast("room:#{game_id}", "going_to_draw",
-                       %{ "name" => player, "score": 0})
+    {player, _} =
+      get_players(state)
+      |> Enum.random()
 
-    still_guessing = Map.get(state, "players")
-                    |> Map.keys()
-                    |> List.delete(player)
+    Endpoint.broadcast("room:#{game_id}", "going_to_draw", %{"name" => player, score: 0})
+
+    still_guessing =
+      Map.get(state, "players")
+      |> Map.keys()
+      |> List.delete(player)
 
     word = random_word()
     letters = String.graphemes(word)
     secret = for _ <- letters, do: "*"
+
     values = %{
       "word" => word,
       "started" => true,
       "drawing" => player,
       "still_guessing" => still_guessing
     }
-    state = state
-            |> put_in(["players", player, "drawn"], true)
-            |> Map.merge(values)
-    Endpoint.broadcast("room:#{game_id}", "word_update",
-                       %{ "word" => secret })
+
+    state =
+      state
+      |> put_in(["players", player, "drawn"], true)
+      |> Map.merge(values)
+
+    Endpoint.broadcast("room:#{game_id}", "word_update", %{"word" => secret})
     timer = set_timer(:time_up, 20_000)
     Map.put(state, "timer", timer)
   end
 
   defp start_game(state) do
     players = get_players(state)
+
     if length(players) >= 2 do
-       count_down_ref = state["count_down"]
-       if is_reference(count_down_ref) do
-         :erlang.cancel_timer(count_down_ref)
-       end
-       count_down(state)
+      count_down_ref = state["count_down"]
+
+      if is_reference(count_down_ref) do
+        :erlang.cancel_timer(count_down_ref)
+      end
+
+      count_down(state)
     else
       state
     end
@@ -201,14 +204,14 @@ defmodule Letmeguess.Game.Server do
 
   defp handle_found_word(state, player) do
     still_guessing = state["still_guessing"]
+
     if Enum.member?(still_guessing, player) do
       game_id = state["game_id"]
-      {_, state} = get_and_update_in(state, ["players", player, "score"],
-                                     &{&1, &1 + 10})
-      Endpoint.broadcast("room:#{game_id}", "score",
-                         get_in(state, ["players", player]))
+      {_, state} = get_and_update_in(state, ["players", player, "score"], &{&1, &1 + 10})
+      Endpoint.broadcast("room:#{game_id}", "score", get_in(state, ["players", player]))
       still_guessing = List.delete(still_guessing, player)
       state = Map.put(state, "still_guessing", still_guessing)
+
       if Enum.empty?(still_guessing) do
         :erlang.cancel_timer(state["timer"])
         next_round(state)
@@ -233,29 +236,30 @@ defmodule Letmeguess.Game.Server do
   end
 
   defp random_word do
-    @words |> Enum.random
+    @words |> Enum.random()
   end
 
   defp try_call(game_id, message) do
-   case GenServer.whereis(ref(game_id)) do
-     nil ->
-       {:error, :game_not_found}
-     server ->
-       GenServer.call(server, message)
-   end
+    case GenServer.whereis(ref(game_id)) do
+      nil ->
+        {:error, :game_not_found}
+
+      server ->
+        GenServer.call(server, message)
+    end
   end
 
   defp try_cast(game_id, message) do
-   case GenServer.whereis(ref(game_id)) do
-     nil ->
-       {:error, :game_not_found}
-     server ->
-       GenServer.cast(server, message)
-   end
+    case GenServer.whereis(ref(game_id)) do
+      nil ->
+        {:error, :game_not_found}
+
+      server ->
+        GenServer.cast(server, message)
+    end
   end
 
   defp ref(game_id) do
     {:global, {:game, game_id}}
   end
-
 end
